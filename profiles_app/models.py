@@ -2,12 +2,15 @@ from django.db import models
 from django.contrib.auth.models import User
 
 # Create your models here.
+
+
 class Profile(models.Model):
     USER_TYPE = (
         ('business', 'Business'),
         ('customer', 'Customer'),
     )
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE,
+                                related_name='profile')
     file = models.FileField(upload_to='profile_files/', blank=True, null=True)
     user_type = models.CharField(max_length=20, choices=USER_TYPE)
     first_name = models.CharField(max_length=150, default='')
