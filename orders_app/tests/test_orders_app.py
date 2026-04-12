@@ -186,3 +186,98 @@ class OrderCreateApiTests(APITestCase):
 		)
 
 		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
+class OrderPatchApiTests(APITestCase):
+	"""Validate PATCH /api/orders/{id}/ permission and validation behavior."""
+
+	def setUp(self):
+		self.customer_user = User.objects.create_user(
+			username='customer_for_patch',
+			email='customer_for_patch@example.com',
+			password='StrongPass123',
+		)
+		self.business_user = User.objects.create_user(
+			username='business_for_patch',
+			email='business_for_patch@example.com',
+			password='StrongPass123',
+		)
+		self.other_business_user = User.objects.create_user(
+			username='other_business_for_patch',
+			email='other_business_for_patch@example.com',
+			password='StrongPass123',
+		)
+
+		Profile.objects.create(
+			user=self.customer_user,
+			user_type=Profile.TYPE_CUSTOMER,
+		)
+		Profile.objects.create(
+			user=self.business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+		Profile.objects.create(
+			user=self.other_business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+
+		self.order = Order.objects.create(
+			customer_user=self.customer_user,
+			business_user=self.business_user,
+			title='Patchable Order',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='150.00',
+			features=['Logo Design'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+		self.url = f'/api/orders/{self.order.id}/'
+
+	def test_patch_order_status_allowed_for_assigned_business_user(self):
+		"""Assigned business user can update order status."""
+		self.client.force_authenticate(user=self.business_user)
+		response = self.client.patch(
+			self.url,
+			{'status': Order.STATUS_COMPLETED},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.order.refresh_from_db()
+		self.assertEqual(self.order.status, Order.STATUS_COMPLETED)
+
+	def test_patch_order_status_forbidden_for_non_assigned_business_user(self):
+		"""Different business user must not update foreign order status."""
+		self.client.force_authenticate(user=self.other_business_user)
+		response = self.client.patch(
+			self.url,
+			{'status': Order.STATUS_COMPLETED},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_patch_order_status_rejects_invalid_status(self):
+		"""Invalid status value must return HTTP 400."""
+		self.client.force_authenticate(user=self.business_user)
+		response = self.client.patch(
+			self.url,
+			{'status': 'not_a_valid_status'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('status', response.data)
+
+	def test_patch_order_status_returns_404_for_unknown_order(self):
+		"""Patching a missing order id must return HTTP 404."""
+		self.client.force_authenticate(user=self.business_user)
+		response = self.client.patch(
+			'/api/orders/999999/',
+			{'status': Order.STATUS_COMPLETED},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
