@@ -1,8 +1,16 @@
 from django.db.models import Q
 from rest_framework import generics, permissions
 
-from orders_app.api.permissions import IsCustomerUser
-from orders_app.api.serializers import OrderCreateSerializer, OrderReadSerializer
+from orders_app.api.permissions import (
+	IsAssignedBusinessUser,
+	IsCustomerUser,
+	IsStaffUserForDelete,
+)
+from orders_app.api.serializers import (
+	OrderCreateSerializer,
+	OrderReadSerializer,
+	OrderStatusPatchSerializer,
+)
 from orders_app.models import Order
 
 
@@ -40,3 +48,30 @@ class OrderListCreateView(generics.ListCreateAPIView):
 			features=offer_detail.features,
 			offer_type=offer_detail.offer_type,
 		)
+
+
+class OrderUpdateDeleteView(generics.UpdateDestroyAPIView):
+	"""Allow PATCH status updates and DELETE on a specific order."""
+
+	queryset = Order.objects.select_related('customer_user', 'business_user')
+	http_method_names = ['patch', 'delete', 'head', 'options']
+
+	def get_serializer_class(self):
+		if self.request.method == 'PATCH':
+			return OrderStatusPatchSerializer
+		return OrderReadSerializer
+
+	def get_permissions(self):
+		if self.request.method == 'PATCH':
+			return [permissions.IsAuthenticated(), IsAssignedBusinessUser()]
+		if self.request.method == 'DELETE':
+			return [permissions.IsAuthenticated(), IsStaffUserForDelete()]
+		return [permissions.IsAuthenticated()]
+
+	def partial_update(self, request, *args, **kwargs):
+		response = super().partial_update(request, *args, **kwargs)
+		response.data = OrderReadSerializer(
+			self.get_object(),
+			context=self.get_serializer_context(),
+		).data
+		return response
