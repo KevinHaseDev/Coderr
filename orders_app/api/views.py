@@ -97,3 +97,22 @@ class OrderCountView(generics.GenericAPIView):
 			status=Order.STATUS_IN_PROGRESS,
 		).count()
 		return Response({'order_count': order_count})
+
+
+class CompletedOrderCountView(generics.GenericAPIView):
+	"""Return count of completed orders for a business user."""
+
+	permission_classes = [permissions.IsAuthenticated]
+
+	def get(self, request, business_user_id):
+		if not Profile.objects.filter(
+			user_id=business_user_id,
+			user_type=Profile.TYPE_BUSINESS,
+		).exists():
+			raise NotFound('No business user found with the provided id.')
+
+		completed_order_count = Order.objects.filter(
+			business_user_id=business_user_id,
+			status=Order.STATUS_COMPLETED,
+		).count()
+		return Response({'completed_order_count': completed_order_count})
