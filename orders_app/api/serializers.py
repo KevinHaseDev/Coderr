@@ -66,6 +66,14 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 			'updated_at',
 		]
 
+
+class OrderStatusPatchSerializer(serializers.ModelSerializer):
+	"""Serialize PATCH payloads that only update an order status."""
+
+	class Meta:
+		model = Order
+		fields = ['status']
+
 	def create(self, validated_data):
 		offer_detail = validated_data.pop('offer_detail')
 		customer_user = validated_data.pop('customer_user', None)
