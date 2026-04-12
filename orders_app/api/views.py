@@ -1,5 +1,7 @@
 from django.db.models import Q
 from rest_framework import generics, permissions
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 
 from orders_app.api.permissions import (
 	IsAssignedBusinessUser,
@@ -12,6 +14,7 @@ from orders_app.api.serializers import (
 	OrderStatusPatchSerializer,
 )
 from orders_app.models import Order
+from profiles_app.models import Profile
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -75,3 +78,22 @@ class OrderUpdateDeleteView(generics.UpdateDestroyAPIView):
 			context=self.get_serializer_context(),
 		).data
 		return response
+
+
+class OrderCountView(generics.GenericAPIView):
+	"""Return count of in-progress orders for a business user."""
+
+	permission_classes = [permissions.IsAuthenticated]
+
+	def get(self, request, business_user_id):
+		if not Profile.objects.filter(
+			user_id=business_user_id,
+			user_type=Profile.TYPE_BUSINESS,
+		).exists():
+			raise NotFound('No business user found with the provided id.')
+
+		order_count = Order.objects.filter(
+			business_user_id=business_user_id,
+			status=Order.STATUS_IN_PROGRESS,
+		).count()
+		return Response({'order_count': order_count})
