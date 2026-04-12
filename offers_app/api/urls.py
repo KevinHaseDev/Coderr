@@ -4,7 +4,7 @@ from offers_app.api.views import OfferListView, OfferRetrieveView, OfferDetailRe
 
 
 urlpatterns = [
-    path('', OfferListView.as_view(), name='offer-list'),
-    path('<int:pk>/', OfferRetrieveView.as_view(), name='offer-detail'),
-    path('<int:pk>/', OfferDetailRetrieveView.as_view(), name='offerdetail-detail'),
+    path('offers/', OfferListView.as_view(), name='offer-list'),
+    path('offers/<int:pk>/', OfferRetrieveView.as_view(), name='offer-detail'),
+    path('offerdetails/<int:pk>/', OfferDetailRetrieveView.as_view(), name='offerdetail-detail'),
 ]

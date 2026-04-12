@@ -5,10 +5,11 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 
-from offers_app.api.permissions import IsBusinessUser
+from offers_app.api.permissions import IsBusinessUser, IsOfferOwner
 from offers_app.api.serializers import (
 	OfferCreateSerializer,
 	OfferDetailSerializer,
+	OfferPatchSerializer,
 	OfferSerializer,
 )
 from offers_app.models import Offer, OfferDetail
@@ -112,12 +113,29 @@ class OfferListView(generics.ListCreateAPIView):
 		return value
 
 
-class OfferRetrieveView(generics.RetrieveAPIView):
-	"""Return a single offer including nested offer detail URLs."""
+class OfferRetrieveView(generics.RetrieveUpdateAPIView):
+	"""Return or partially update a single offer."""
 
 	queryset = Offer.objects.select_related('user').prefetch_related('details')
-	serializer_class = OfferSerializer
-	permission_classes = [permissions.IsAuthenticated]
+	http_method_names = ['get', 'patch', 'head', 'options']
+
+	def get_serializer_class(self):
+		if self.request.method == 'PATCH':
+			return OfferPatchSerializer
+		return OfferSerializer
+
+	def get_permissions(self):
+		if self.request.method == 'PATCH':
+			return [permissions.IsAuthenticated(), IsOfferOwner()]
+		return [permissions.IsAuthenticated()]
+
+	def partial_update(self, request, *args, **kwargs):
+		response = super().partial_update(request, *args, **kwargs)
+		response.data = OfferSerializer(
+			self.get_object(),
+			context=self.get_serializer_context(),
+		).data
+		return response
 
 
 class OfferDetailRetrieveView(generics.RetrieveAPIView):

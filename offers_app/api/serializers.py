@@ -68,6 +68,80 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 		return offer
 
 
+class OfferDetailPatchSerializer(serializers.ModelSerializer):
+	"""Serialize partial updates for a single offer detail."""
+
+	class Meta:
+		model = OfferDetail
+		fields = [
+			'title',
+			'revisions',
+			'delivery_time_in_days',
+			'price',
+			'features',
+			'offer_type',
+		]
+		extra_kwargs = {
+			'title': {'required': False},
+			'revisions': {'required': False},
+			'delivery_time_in_days': {'required': False},
+			'price': {'required': False},
+			'features': {'required': False},
+			'offer_type': {'required': False},
+		}
+
+
+class OfferPatchSerializer(serializers.ModelSerializer):
+	"""Partially update an offer and selected details by offer_type."""
+
+	details = OfferDetailPatchSerializer(many=True, required=False)
+
+	class Meta:
+		model = Offer
+		fields = ['title', 'image', 'description', 'details']
+		extra_kwargs = {
+			'title': {'required': False},
+			'image': {'required': False},
+			'description': {'required': False},
+		}
+
+	def validate_details(self, value):
+		offer_types = []
+		for index, detail in enumerate(value):
+			detail_type = detail.get('offer_type')
+			if not detail_type:
+				raise serializers.ValidationError({index: {'offer_type': 'This field is required.'}})
+			offer_types.append(detail_type)
+		if len(set(offer_types)) != len(offer_types):
+			raise serializers.ValidationError('offer_type must be unique within details.')
+		return value
+
+	def update(self, instance, validated_data):
+		details_data = validated_data.pop('details', None)
+		with transaction.atomic():
+			for field, value in validated_data.items():
+				setattr(instance, field, value)
+			instance.save()
+
+			if details_data is None:
+				return instance
+
+			details_by_type = {detail.offer_type: detail for detail in instance.details.all()}
+			for detail_data in details_data:
+				detail_data = dict(detail_data)
+				detail_type = detail_data.pop('offer_type')
+				detail_instance = details_by_type.get(detail_type)
+				if detail_instance is None:
+					raise serializers.ValidationError(
+						{'details': f"No detail found for offer_type '{detail_type}'."}
+					)
+				for field, value in detail_data.items():
+					setattr(detail_instance, field, value)
+				if detail_data:
+					detail_instance.save()
+		return instance
+
+
 class OfferSerializer(serializers.ModelSerializer):
 	"""Serialize offers with nested detail URLs and aggregated minima."""
 

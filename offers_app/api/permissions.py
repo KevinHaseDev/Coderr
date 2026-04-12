@@ -15,3 +15,16 @@ class IsBusinessUser(BasePermission):
 			user=request.user,
 			user_type=Profile.TYPE_BUSINESS,
 		).exists()
+
+
+class IsOfferOwner(BasePermission):
+	"""Allow modifications only for the owner of an offer object."""
+
+	message = 'Only the offer owner can modify this offer.'
+
+	def has_object_permission(self, request, view, obj):
+		return bool(
+			request.user
+			and request.user.is_authenticated
+			and obj.user_id == request.user.id
+		)
