@@ -22,6 +22,23 @@ class OfferDetailUrlSerializer(serializers.ModelSerializer):
 		return request.build_absolute_uri(path)
 
 
+class OfferDetailSerializer(serializers.ModelSerializer):
+	"""Serialize full offer detail payloads."""
+
+	class Meta:
+		model = OfferDetail
+		fields = [
+			'id',
+			'title',
+			'revisions',
+			'delivery_time_in_days',
+			'price',
+			'features',
+			'offer_type',
+		]
+		read_only_fields = ['id']
+
+
 class OfferSerializer(serializers.ModelSerializer):
 	"""Serialize offers with nested detail URLs and aggregated minima."""
 
