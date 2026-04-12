@@ -3,6 +3,13 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
+class OfferType(models.TextChoices):
+    BASIC = 'basic', 'Basic'
+    STANDARD = 'standard', 'Standard'
+    PREMIUM = 'premium', 'Premium'
+
+
 class Offer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offers')
     title = models.CharField(max_length=255)
@@ -15,14 +22,10 @@ class Offer(models.Model):
         return self.title
 
 class OfferDetail(models.Model):
-    OFFER_TYPE_BASIC = 'basic'
-    OFFER_TYPE_STANDARD = 'standard'
-    OFFER_TYPE_PREMIUM = 'premium'
-    OFFER_TYPE_CHOICES = (
-        (OFFER_TYPE_BASIC, 'Basic'),
-        (OFFER_TYPE_STANDARD, 'Standard'),
-        (OFFER_TYPE_PREMIUM, 'Premium'),
-    )
+    OFFER_TYPE_BASIC = OfferType.BASIC
+    OFFER_TYPE_STANDARD = OfferType.STANDARD
+    OFFER_TYPE_PREMIUM = OfferType.PREMIUM
+    OFFER_TYPE_CHOICES = OfferType.choices
 
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='details')
     title = models.CharField(max_length=255)
