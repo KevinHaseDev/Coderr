@@ -6,7 +6,9 @@ from django.urls import include, path
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from offers_app.models import Offer, OfferDetail
 from orders_app.models import Order
+from profiles_app.models import Profile
 
 urlpatterns = [
 	path('api/', include('orders_app.api.urls')),
@@ -86,3 +88,101 @@ class OrderListApiTests(APITestCase):
 			{customer_order.id, business_order.id},
 		)
 		self.assertNotIn(unrelated_order.id, returned_ids)
+
+
+@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
+class OrderCreateApiTests(APITestCase):
+	"""Validate POST /api/orders/ create behavior."""
+
+	LIST_URL = '/api/orders/'
+
+	def setUp(self):
+		self.customer_user = User.objects.create_user(
+			username='customer_for_post',
+			email='customer_for_post@example.com',
+			password='StrongPass123',
+		)
+		self.business_user = User.objects.create_user(
+			username='business_for_post',
+			email='business_for_post@example.com',
+			password='StrongPass123',
+		)
+
+		Profile.objects.create(
+			user=self.customer_user,
+			user_type=Profile.TYPE_CUSTOMER,
+		)
+		Profile.objects.create(
+			user=self.business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+
+		offer = Offer.objects.create(
+			user=self.business_user,
+			title='Logo Offer',
+			description='Offer description',
+			image=None,
+		)
+		self.offer_detail = OfferDetail.objects.create(
+			offer=offer,
+			title='Basic Logo',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='150.00',
+			features=['Logo Design'],
+			offer_type=OfferDetail.OFFER_TYPE_BASIC,
+		)
+
+	def test_post_orders_creates_order_from_offer_detail(self):
+		"""Customer can create order snapshot from offer_detail_id."""
+		self.client.force_authenticate(user=self.customer_user)
+		response = self.client.post(
+			self.LIST_URL,
+			{'offer_detail_id': self.offer_detail.id},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		self.assertEqual(Order.objects.count(), 1)
+
+		order = Order.objects.get()
+		self.assertEqual(order.customer_user, self.customer_user)
+		self.assertEqual(order.business_user, self.business_user)
+		self.assertEqual(order.title, self.offer_detail.title)
+		self.assertEqual(order.offer_type, self.offer_detail.offer_type)
+		self.assertEqual(order.status, Order.STATUS_IN_PROGRESS)
+
+		self.assertEqual(response.data['id'], order.id)
+		self.assertEqual(response.data['customer_user'], self.customer_user.id)
+		self.assertEqual(response.data['business_user'], self.business_user.id)
+
+	def test_post_orders_returns_400_when_offer_detail_id_missing(self):
+		"""offer_detail_id is required for order creation."""
+		self.client.force_authenticate(user=self.customer_user)
+		response = self.client.post(self.LIST_URL, {}, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('offer_detail_id', response.data)
+
+	def test_post_orders_returns_400_for_invalid_offer_detail_id(self):
+		"""Unknown offer_detail_id should fail validation."""
+		self.client.force_authenticate(user=self.customer_user)
+		response = self.client.post(
+			self.LIST_URL,
+			{'offer_detail_id': 999999},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('offer_detail_id', response.data)
+
+	def test_post_orders_forbidden_for_non_customer_user(self):
+		"""Only users with customer profile can create orders."""
+		self.client.force_authenticate(user=self.business_user)
+		response = self.client.post(
+			self.LIST_URL,
+			{'offer_detail_id': self.offer_detail.id},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
