@@ -349,3 +349,209 @@ class OrderDeleteApiTests(APITestCase):
 		response = self.client.delete('/api/orders/999999/')
 
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
+class OrderCountApiTests(APITestCase):
+	"""Validate GET /api/order-count/{business_user_id}/ behavior."""
+
+	def setUp(self):
+		self.auth_user = User.objects.create_user(
+			username='count_auth_user',
+			email='count_auth_user@example.com',
+			password='StrongPass123',
+		)
+		self.business_user = User.objects.create_user(
+			username='count_business_user',
+			email='count_business_user@example.com',
+			password='StrongPass123',
+		)
+		self.other_business_user = User.objects.create_user(
+			username='count_other_business_user',
+			email='count_other_business_user@example.com',
+			password='StrongPass123',
+		)
+
+		Profile.objects.create(
+			user=self.auth_user,
+			user_type=Profile.TYPE_CUSTOMER,
+		)
+		Profile.objects.create(
+			user=self.business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+		Profile.objects.create(
+			user=self.other_business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='In Progress 1',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='100.00',
+			features=['Feature A'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='In Progress 2',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='120.00',
+			features=['Feature B'],
+			offer_type=Order.OFFER_TYPE_STANDARD,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='Completed Ignored',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='140.00',
+			features=['Feature C'],
+			offer_type=Order.OFFER_TYPE_PREMIUM,
+			status=Order.STATUS_COMPLETED,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.other_business_user,
+			title='Other Business Ignored',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='160.00',
+			features=['Feature D'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+
+	def test_order_count_requires_authentication(self):
+		"""Anonymous requests must be rejected with HTTP 401."""
+		response = self.client.get(f'/api/order-count/{self.business_user.id}/')
+
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_order_count_returns_correct_in_progress_count(self):
+		"""Endpoint must return only in-progress orders for target business user."""
+		self.client.force_authenticate(user=self.auth_user)
+		response = self.client.get(f'/api/order-count/{self.business_user.id}/')
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data, {'order_count': 2})
+
+	def test_order_count_returns_404_for_unknown_business_user(self):
+		"""Unknown business user id must return HTTP 404."""
+		self.client.force_authenticate(user=self.auth_user)
+		response = self.client.get('/api/order-count/999999/')
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
+class CompletedOrderCountApiTests(APITestCase):
+	"""Validate GET /api/completed-order-count/{business_user_id}/ behavior."""
+
+	def setUp(self):
+		self.auth_user = User.objects.create_user(
+			username='completed_count_auth_user',
+			email='completed_count_auth_user@example.com',
+			password='StrongPass123',
+		)
+		self.business_user = User.objects.create_user(
+			username='completed_count_business_user',
+			email='completed_count_business_user@example.com',
+			password='StrongPass123',
+		)
+		self.other_business_user = User.objects.create_user(
+			username='completed_count_other_business_user',
+			email='completed_count_other_business_user@example.com',
+			password='StrongPass123',
+		)
+
+		Profile.objects.create(
+			user=self.auth_user,
+			user_type=Profile.TYPE_CUSTOMER,
+		)
+		Profile.objects.create(
+			user=self.business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+		Profile.objects.create(
+			user=self.other_business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='Completed 1',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='210.00',
+			features=['Feature E'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_COMPLETED,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='Completed 2',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='240.00',
+			features=['Feature F'],
+			offer_type=Order.OFFER_TYPE_STANDARD,
+			status=Order.STATUS_COMPLETED,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.business_user,
+			title='In Progress Ignored',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='260.00',
+			features=['Feature G'],
+			offer_type=Order.OFFER_TYPE_PREMIUM,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+		Order.objects.create(
+			customer_user=self.auth_user,
+			business_user=self.other_business_user,
+			title='Other Business Completed Ignored',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='280.00',
+			features=['Feature H'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_COMPLETED,
+		)
+
+	def test_completed_order_count_requires_authentication(self):
+		"""Anonymous requests must be rejected with HTTP 401."""
+		response = self.client.get(
+			f'/api/completed-order-count/{self.business_user.id}/'
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_completed_order_count_returns_correct_count(self):
+		"""Endpoint must return only completed orders for target business user."""
+		self.client.force_authenticate(user=self.auth_user)
+		response = self.client.get(
+			f'/api/completed-order-count/{self.business_user.id}/'
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.assertEqual(response.data, {'completed_order_count': 2})
+
+	def test_completed_order_count_returns_404_for_unknown_business_user(self):
+		"""Unknown business user id must return HTTP 404."""
+		self.client.force_authenticate(user=self.auth_user)
+		response = self.client.get('/api/completed-order-count/999999/')
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

@@ -53,11 +53,11 @@ class OrderListCreateView(generics.ListCreateAPIView):
 		)
 
 
-class OrderUpdateDeleteView(generics.UpdateDestroyAPIView):
+class OrderUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 	"""Allow PATCH status updates and DELETE on a specific order."""
 
 	queryset = Order.objects.select_related('customer_user', 'business_user')
-	http_method_names = ['patch', 'delete', 'head', 'options']
+	http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
 	def get_serializer_class(self):
 		if self.request.method == 'PATCH':

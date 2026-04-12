@@ -3,7 +3,6 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -13,7 +12,6 @@ from profiles_app.models import Profile
 User = get_user_model()
 
 
-@override_settings(ROOT_URLCONF='offers_app.tests_urls')
 class OfferApiTestBase(APITestCase):
 	"""Shared fixtures and helpers for offer endpoint tests."""
 
