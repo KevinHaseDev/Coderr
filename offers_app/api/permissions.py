@@ -18,9 +18,9 @@ class IsBusinessUser(BasePermission):
 
 
 class IsOfferOwner(BasePermission):
-	"""Allow modifications only for the owner of an offer object."""
+	"""Allow modifications and deletion only for the offer owner."""
 
-	message = 'Only the offer owner can modify this offer.'
+	message = 'Only the offer owner can modify or delete this offer.'
 
 	def has_object_permission(self, request, view, obj):
 		return bool(

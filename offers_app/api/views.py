@@ -113,11 +113,11 @@ class OfferListView(generics.ListCreateAPIView):
 		return value
 
 
-class OfferRetrieveView(generics.RetrieveUpdateAPIView):
-	"""Return or partially update a single offer."""
+class OfferRetrieveView(generics.RetrieveUpdateDestroyAPIView):
+	"""Return, partially update, or delete a single offer."""
 
 	queryset = Offer.objects.select_related('user').prefetch_related('details')
-	http_method_names = ['get', 'patch', 'head', 'options']
+	http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
 	def get_serializer_class(self):
 		if self.request.method == 'PATCH':
@@ -125,7 +125,7 @@ class OfferRetrieveView(generics.RetrieveUpdateAPIView):
 		return OfferSerializer
 
 	def get_permissions(self):
-		if self.request.method == 'PATCH':
+		if self.request.method in {'PATCH', 'DELETE'}:
 			return [permissions.IsAuthenticated(), IsOfferOwner()]
 		return [permissions.IsAuthenticated()]
 
