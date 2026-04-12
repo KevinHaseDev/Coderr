@@ -281,3 +281,71 @@ class OrderPatchApiTests(APITestCase):
 		)
 
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
+class OrderDeleteApiTests(APITestCase):
+	"""Validate DELETE /api/orders/{id}/ permission and response behavior."""
+
+	def setUp(self):
+		self.customer_user = User.objects.create_user(
+			username='customer_for_delete',
+			email='customer_for_delete@example.com',
+			password='StrongPass123',
+		)
+		self.business_user = User.objects.create_user(
+			username='business_for_delete',
+			email='business_for_delete@example.com',
+			password='StrongPass123',
+		)
+		self.staff_user = User.objects.create_user(
+			username='staff_for_delete',
+			email='staff_for_delete@example.com',
+			password='StrongPass123',
+			is_staff=True,
+		)
+
+		Profile.objects.create(
+			user=self.customer_user,
+			user_type=Profile.TYPE_CUSTOMER,
+		)
+		Profile.objects.create(
+			user=self.business_user,
+			user_type=Profile.TYPE_BUSINESS,
+		)
+
+		self.order = Order.objects.create(
+			customer_user=self.customer_user,
+			business_user=self.business_user,
+			title='Deletable Order',
+			revisions=2,
+			delivery_time_in_days=5,
+			price='150.00',
+			features=['Logo Design'],
+			offer_type=Order.OFFER_TYPE_BASIC,
+			status=Order.STATUS_IN_PROGRESS,
+		)
+		self.url = f'/api/orders/{self.order.id}/'
+
+	def test_delete_order_forbidden_for_non_staff_user(self):
+		"""Non-staff users must not be allowed to delete orders."""
+		self.client.force_authenticate(user=self.business_user)
+		response = self.client.delete(self.url)
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_delete_order_returns_204_for_staff_user(self):
+		"""Staff user can delete order and receives HTTP 204 with empty body."""
+		self.client.force_authenticate(user=self.staff_user)
+		response = self.client.delete(self.url)
+
+		self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+		self.assertEqual(response.content, b'')
+		self.assertFalse(Order.objects.filter(id=self.order.id).exists())
+
+	def test_delete_order_returns_404_for_unknown_order(self):
+		"""Deleting a non-existing order id must return HTTP 404."""
+		self.client.force_authenticate(user=self.staff_user)
+		response = self.client.delete('/api/orders/999999/')
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
