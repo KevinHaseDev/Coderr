@@ -93,3 +93,11 @@ class OfferListView(generics.ListAPIView):
 		if value < min_value:
 			raise ValidationError({name: f'Must be greater than or equal to {min_value}.'})
 		return value
+
+
+class OfferRetrieveView(generics.RetrieveAPIView):
+	"""Return a single offer including nested offer detail URLs."""
+
+	queryset = Offer.objects.select_related('user').prefetch_related('details')
+	serializer_class = OfferSerializer
+	permission_classes = [permissions.IsAuthenticated]
