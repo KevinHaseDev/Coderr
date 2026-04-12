@@ -5,8 +5,13 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 
-from offers_app.api.serializers import OfferSerializer
-from offers_app.models import Offer
+from offers_app.api.permissions import IsBusinessUser
+from offers_app.api.serializers import (
+	OfferCreateSerializer,
+	OfferDetailSerializer,
+	OfferSerializer,
+)
+from offers_app.models import Offer, OfferDetail
 
 
 class OfferListPagination(PageNumberPagination):
@@ -17,12 +22,24 @@ class OfferListPagination(PageNumberPagination):
 	max_page_size = 100
 
 
-class OfferListView(generics.ListAPIView):
+class OfferListView(generics.ListCreateAPIView):
 	"""Return paginated offers with filtering, search, and ordering."""
 
 	serializer_class = OfferSerializer
-	permission_classes = [permissions.AllowAny]
 	pagination_class = OfferListPagination
+
+	def get_serializer_class(self):
+		if self.request.method == 'POST':
+			return OfferCreateSerializer
+		return OfferSerializer
+
+	def get_permissions(self):
+		if self.request.method == 'POST':
+			return [permissions.IsAuthenticated(), IsBusinessUser()]
+		return [permissions.AllowAny()]
+
+	def perform_create(self, serializer):
+		serializer.save(user=self.request.user)
 
 	def get_queryset(self):
 		queryset = Offer.objects.select_related('user').prefetch_related('details')
@@ -100,4 +117,12 @@ class OfferRetrieveView(generics.RetrieveAPIView):
 
 	queryset = Offer.objects.select_related('user').prefetch_related('details')
 	serializer_class = OfferSerializer
+	permission_classes = [permissions.IsAuthenticated]
+
+
+class OfferDetailRetrieveView(generics.RetrieveAPIView):
+	"""Return one offer detail object with all documented fields."""
+
+	queryset = OfferDetail.objects.select_related('offer')
+	serializer_class = OfferDetailSerializer
 	permission_classes = [permissions.IsAuthenticated]

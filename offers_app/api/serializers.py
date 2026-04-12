@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Min
 from rest_framework import serializers
 
@@ -37,6 +38,34 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 			'offer_type',
 		]
 		read_only_fields = ['id']
+
+
+class OfferCreateSerializer(serializers.ModelSerializer):
+	"""Create offers with exactly three uniquely typed details."""
+
+	details = OfferDetailSerializer(many=True)
+
+	class Meta:
+		model = Offer
+		fields = ['id', 'title', 'image', 'description', 'details']
+		read_only_fields = ['id']
+
+	def validate_details(self, value):
+		if len(value) != 3:
+			raise serializers.ValidationError('Exactly 3 details are required.')
+		offer_types = [detail['offer_type'] for detail in value]
+		if len(set(offer_types)) != len(offer_types):
+			raise serializers.ValidationError('offer_type must be unique within details.')
+		return value
+
+	def create(self, validated_data):
+		details_data = validated_data.pop('details')
+		with transaction.atomic():
+			offer = Offer.objects.create(**validated_data)
+			OfferDetail.objects.bulk_create(
+				[OfferDetail(offer=offer, **detail_data) for detail_data in details_data]
+			)
+		return offer
 
 
 class OfferSerializer(serializers.ModelSerializer):
