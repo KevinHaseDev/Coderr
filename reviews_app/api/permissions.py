@@ -1,20 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from profiles_app.models import Profile
-
-
-class IsCustomerUser(BasePermission):
-	"""Allow review creation only for authenticated customer users."""
-
-	message = 'Only customer users can create reviews.'
-
-	def has_permission(self, request, view):
-		if not request.user or not request.user.is_authenticated:
-			return False
-		return Profile.objects.filter(
-			user=request.user,
-			user_type=Profile.TYPE_CUSTOMER,
-		).exists()
+from core.api.permissions import IsCustomerUser
 
 
 class IsReviewOwner(BasePermission):

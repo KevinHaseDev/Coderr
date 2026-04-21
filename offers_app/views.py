@@ -1,3 +1,1 @@
-from django.shortcuts import render
-
-# Create your views here.
+"""Template views for offers_app are not used in this API-only project."""

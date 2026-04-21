@@ -1,8 +1,6 @@
 """Tests for order list endpoint behavior."""
 
 from django.contrib.auth import get_user_model
-from django.test import override_settings
-from django.urls import include, path
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -10,14 +8,9 @@ from offers_app.models import Offer, OfferDetail
 from orders_app.models import Order
 from profiles_app.models import Profile
 
-urlpatterns = [
-	path('api/', include('orders_app.api.urls')),
-]
-
 User = get_user_model()
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class OrderListApiTests(APITestCase):
 	"""Validate GET /api/orders/ auth and ownership filtering."""
 
@@ -90,7 +83,6 @@ class OrderListApiTests(APITestCase):
 		self.assertNotIn(unrelated_order.id, returned_ids)
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class OrderCreateApiTests(APITestCase):
 	"""Validate POST /api/orders/ create behavior."""
 
@@ -188,7 +180,6 @@ class OrderCreateApiTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class OrderPatchApiTests(APITestCase):
 	"""Validate PATCH /api/orders/{id}/ permission and validation behavior."""
 
@@ -283,7 +274,6 @@ class OrderPatchApiTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class OrderDeleteApiTests(APITestCase):
 	"""Validate DELETE /api/orders/{id}/ permission and response behavior."""
 
@@ -351,7 +341,6 @@ class OrderDeleteApiTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class OrderCountApiTests(APITestCase):
 	"""Validate GET /api/order-count/{business_user_id}/ behavior."""
 
@@ -452,7 +441,6 @@ class OrderCountApiTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-@override_settings(ROOT_URLCONF='orders_app.tests.test_orders_app')
 class CompletedOrderCountApiTests(APITestCase):
 	"""Validate GET /api/completed-order-count/{business_user_id}/ behavior."""
 

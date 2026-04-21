@@ -1,1 +1,1 @@
-from django.db import models
+"""Models for info_app."""

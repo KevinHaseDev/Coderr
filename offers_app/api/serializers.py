@@ -119,27 +119,30 @@ class OfferPatchSerializer(serializers.ModelSerializer):
 	def update(self, instance, validated_data):
 		details_data = validated_data.pop('details', None)
 		with transaction.atomic():
-			for field, value in validated_data.items():
-				setattr(instance, field, value)
-			instance.save()
-
-			if details_data is None:
-				return instance
-
-			details_by_type = {detail.offer_type: detail for detail in instance.details.all()}
-			for detail_data in details_data:
-				detail_data = dict(detail_data)
-				detail_type = detail_data.pop('offer_type')
-				detail_instance = details_by_type.get(detail_type)
-				if detail_instance is None:
-					raise serializers.ValidationError(
-						{'details': f"No detail found for offer_type '{detail_type}'."}
-					)
-				for field, value in detail_data.items():
-					setattr(detail_instance, field, value)
-				if detail_data:
-					detail_instance.save()
+			self._update_offer_fields(instance, validated_data)
+			if details_data is not None:
+				self._update_offer_details(instance, details_data)
 		return instance
+
+	def _update_offer_fields(self, instance, validated_data):
+		for field, value in validated_data.items():
+			setattr(instance, field, value)
+		instance.save()
+
+	def _update_offer_details(self, instance, details_data):
+		details_by_type = {detail.offer_type: detail for detail in instance.details.all()}
+		for detail_data in details_data:
+			detail_data = dict(detail_data)
+			detail_type = detail_data.pop('offer_type')
+			detail_instance = details_by_type.get(detail_type)
+			if detail_instance is None:
+				raise serializers.ValidationError(
+					{'details': f"No detail found for offer_type '{detail_type}'."}
+				)
+			for field, value in detail_data.items():
+				setattr(detail_instance, field, value)
+			if detail_data:
+				detail_instance.save()
 
 
 class OfferSerializer(serializers.ModelSerializer):

@@ -20,30 +20,37 @@ class ReviewSerializer(serializers.ModelSerializer):
 		return value
 
 	def validate(self, attrs):
-		request = self.context.get('request')
-		reviewer = getattr(request, 'user', None)
-		if reviewer is None or not reviewer.is_authenticated:
-			reviewer = attrs.get('reviewer') or getattr(self.instance, 'reviewer', None)
-
+		reviewer = self._get_reviewer(attrs)
 		business_user = attrs.get('business_user') or getattr(
 			self.instance,
 			'business_user',
 			None,
 		)
-		if reviewer and business_user:
-			duplicate_review = Review.objects.filter(
-				reviewer=reviewer,
-				business_user=business_user,
-			)
-			if self.instance is not None:
-				duplicate_review = duplicate_review.exclude(pk=self.instance.pk)
-			if duplicate_review.exists():
-				raise serializers.ValidationError({
-					'non_field_errors': [
-						'Du hast diesen Business-User bereits bewertet.',
-					],
-				})
+		self._validate_duplicate_review(reviewer, business_user)
 		return attrs
+
+	def _get_reviewer(self, attrs):
+		request = self.context.get('request')
+		reviewer = getattr(request, 'user', None)
+		if reviewer and reviewer.is_authenticated:
+			return reviewer
+		return attrs.get('reviewer') or getattr(self.instance, 'reviewer', None)
+
+	def _validate_duplicate_review(self, reviewer, business_user):
+		if not reviewer or not business_user:
+			return
+		duplicate_review = Review.objects.filter(
+			reviewer=reviewer,
+			business_user=business_user,
+		)
+		if self.instance is not None:
+			duplicate_review = duplicate_review.exclude(pk=self.instance.pk)
+		if duplicate_review.exists():
+			raise serializers.ValidationError({
+				'non_field_errors': [
+					'Du hast diesen Business-User bereits bewertet.',
+				],
+			})
 
 	class Meta:
 		model = Review

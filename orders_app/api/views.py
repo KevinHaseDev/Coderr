@@ -39,19 +39,6 @@ class OrderListCreateView(generics.ListCreateAPIView):
 			Q(customer_user=user) | Q(business_user=user)
 		).order_by('-updated_at', '-id')
 
-	def perform_create(self, serializer):
-		offer_detail = serializer.validated_data['offer_detail']
-		serializer.instance = Order.objects.create(
-			customer_user=self.request.user,
-			business_user=offer_detail.offer.user,
-			title=offer_detail.title,
-			revisions=offer_detail.revisions,
-			delivery_time_in_days=offer_detail.delivery_time_in_days,
-			price=offer_detail.price,
-			features=offer_detail.features,
-			offer_type=offer_detail.offer_type,
-		)
-
 
 class OrderUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 	"""Allow PATCH status updates and DELETE on a specific order."""
@@ -80,39 +67,41 @@ class OrderUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 		return response
 
 
-class OrderCountView(generics.GenericAPIView):
+class BaseOrderCountView(generics.GenericAPIView):
+	"""Return a status-specific order count for a business user."""
+
+	permission_classes = [permissions.IsAuthenticated]
+	status = None
+	response_key = 'order_count'
+
+	def get(self, request, business_user_id):
+		self._ensure_business_profile_exists(business_user_id)
+		order_count = self._get_order_count(business_user_id)
+		return Response({self.response_key: order_count})
+
+	def _ensure_business_profile_exists(self, business_user_id):
+		if not Profile.objects.filter(
+			user_id=business_user_id,
+			user_type=Profile.TYPE_BUSINESS,
+		).exists():
+			raise NotFound('No business user found with the provided id.')
+
+	def _get_order_count(self, business_user_id):
+		return Order.objects.filter(
+			business_user_id=business_user_id,
+			status=self.status,
+		).count()
+
+
+class OrderCountView(BaseOrderCountView):
 	"""Return count of in-progress orders for a business user."""
 
-	permission_classes = [permissions.IsAuthenticated]
-
-	def get(self, request, business_user_id):
-		if not Profile.objects.filter(
-			user_id=business_user_id,
-			user_type=Profile.TYPE_BUSINESS,
-		).exists():
-			raise NotFound('No business user found with the provided id.')
-
-		order_count = Order.objects.filter(
-			business_user_id=business_user_id,
-			status=Order.STATUS_IN_PROGRESS,
-		).count()
-		return Response({'order_count': order_count})
+	status = Order.STATUS_IN_PROGRESS
+	response_key = 'order_count'
 
 
-class CompletedOrderCountView(generics.GenericAPIView):
+class CompletedOrderCountView(BaseOrderCountView):
 	"""Return count of completed orders for a business user."""
 
-	permission_classes = [permissions.IsAuthenticated]
-
-	def get(self, request, business_user_id):
-		if not Profile.objects.filter(
-			user_id=business_user_id,
-			user_type=Profile.TYPE_BUSINESS,
-		).exists():
-			raise NotFound('No business user found with the provided id.')
-
-		completed_order_count = Order.objects.filter(
-			business_user_id=business_user_id,
-			status=Order.STATUS_COMPLETED,
-		).count()
-		return Response({'completed_order_count': completed_order_count})
+	status = Order.STATUS_COMPLETED
+	response_key = 'completed_order_count'

@@ -1,20 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from profiles_app.models import Profile
-
-
-class IsCustomerUser(BasePermission):
-	"""Allow order creation only for authenticated customer users."""
-
-	message = 'Only customer users can create orders.'
-
-	def has_permission(self, request, view):
-		if not request.user or not request.user.is_authenticated:
-			return False
-		return Profile.objects.filter(
-			user=request.user,
-			user_type=Profile.TYPE_CUSTOMER,
-		).exists()
+from core.api.permissions import IsBusinessUser, IsCustomerUser
 
 
 class IsAssignedBusinessUser(BasePermission):
@@ -23,12 +9,7 @@ class IsAssignedBusinessUser(BasePermission):
 	message = 'Only the assigned business user can update this order status.'
 
 	def has_permission(self, request, view):
-		if not request.user or not request.user.is_authenticated:
-			return False
-		return Profile.objects.filter(
-			user=request.user,
-			user_type=Profile.TYPE_BUSINESS,
-		).exists()
+		return IsBusinessUser().has_permission(request, view)
 
 	def has_object_permission(self, request, view, obj):
 		return bool(

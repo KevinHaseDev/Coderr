@@ -7,7 +7,7 @@ from reviews_app.api.serializers import ReviewPatchSerializer, ReviewSerializer
 from reviews_app.models import Review
 
 
-class ReviewsAppStatusView(ListCreateAPIView):
+class ReviewListCreateView(ListCreateAPIView):
 	"""List reviews for authenticated users with optional filtering and ordering."""
 
 	permission_classes = [IsAuthenticated]

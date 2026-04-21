@@ -1,1 +1,1 @@
-from django.contrib import admin
+"""Admin registrations for info_app."""
