@@ -4,6 +4,3 @@ __pycache__/
 db.sqlite3
 .env
 .github
-offer.txt
-orders.txt
-reviews.txt
