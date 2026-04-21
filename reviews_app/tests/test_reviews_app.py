@@ -231,3 +231,102 @@ class ReviewCreateApiTests(APITestCase):
 
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertIn('business_user', response.data)
+
+
+class ReviewPatchDeleteApiTests(APITestCase):
+	"""Validate PATCH and DELETE /api/reviews/{id}/ behavior."""
+
+	def setUp(self):
+		self.owner_user = self._create_user_with_profile(
+			'owner_user',
+			Profile.TYPE_CUSTOMER,
+		)
+		self.other_user = self._create_user_with_profile(
+			'other_user',
+			Profile.TYPE_CUSTOMER,
+		)
+		self.business_user = self._create_user_with_profile(
+			'business_user_for_patch_delete',
+			Profile.TYPE_BUSINESS,
+		)
+		self.review = Review.objects.create(
+			business_user=self.business_user,
+			reviewer=self.owner_user,
+			rating=3,
+			description='Initial review text',
+		)
+		self.url = f'/api/reviews/{self.review.id}/'
+
+	def _create_user_with_profile(self, username, user_type):
+		user = User.objects.create_user(
+			username=username,
+			email=f'{username}@example.com',
+			password='StrongPass123',
+		)
+		Profile.objects.create(user=user, user_type=user_type)
+		return user
+
+	def test_patch_review_requires_authentication(self):
+		response = self.client.patch(
+			self.url,
+			{'rating': 5, 'description': 'Updated text'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_patch_review_is_forbidden_for_non_owner(self):
+		self.client.force_authenticate(user=self.other_user)
+		response = self.client.patch(
+			self.url,
+			{'rating': 5, 'description': 'Not allowed update'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_patch_review_returns_404_for_unknown_id(self):
+		self.client.force_authenticate(user=self.owner_user)
+		response = self.client.patch(
+			'/api/reviews/999999/',
+			{'rating': 5, 'description': 'Missing review'},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+	def test_patch_review_updates_rating_and_description(self):
+		self.client.force_authenticate(user=self.owner_user)
+		payload = {'rating': 5, 'description': 'Jetzt deutlich besser'}
+		response = self.client.patch(self.url, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_200_OK)
+		self.review.refresh_from_db()
+		self.assertEqual(self.review.rating, 5)
+		self.assertEqual(self.review.description, 'Jetzt deutlich besser')
+		self.assertEqual(response.data['rating'], 5)
+		self.assertEqual(response.data['description'], 'Jetzt deutlich besser')
+
+	def test_delete_review_requires_authentication(self):
+		response = self.client.delete(self.url)
+
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_delete_review_is_forbidden_for_non_owner(self):
+		self.client.force_authenticate(user=self.other_user)
+		response = self.client.delete(self.url)
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_delete_review_returns_404_for_unknown_id(self):
+		self.client.force_authenticate(user=self.owner_user)
+		response = self.client.delete('/api/reviews/999999/')
+
+		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+	def test_delete_review_returns_204_and_removes_object(self):
+		self.client.force_authenticate(user=self.owner_user)
+		response = self.client.delete(self.url)
+
+		self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+		self.assertFalse(Review.objects.filter(pk=self.review.pk).exists())

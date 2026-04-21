@@ -34,7 +34,7 @@ class ReviewsAppStatusView(ListCreateAPIView):
 		return queryset.order_by(ordering)
 
 	def _get_filtered_queryset(self):
-		queryset = self.queryset
+		queryset = self.queryset.all()
 		business_user_id = self.request.query_params.get('business_user_id')
 		reviewer_id = self.request.query_params.get('reviewer_id')
 		if business_user_id:
