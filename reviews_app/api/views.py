@@ -1,9 +1,9 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 
-from reviews_app.api.permissions import IsCustomerUser
-from reviews_app.api.serializers import ReviewSerializer
+from reviews_app.api.permissions import IsCustomerUser, IsReviewOwner
+from reviews_app.api.serializers import ReviewPatchSerializer, ReviewSerializer
 from reviews_app.models import Review
 
 
@@ -42,3 +42,26 @@ class ReviewsAppStatusView(ListCreateAPIView):
 		if reviewer_id:
 			queryset = queryset.filter(reviewer_id=reviewer_id)
 		return queryset
+
+
+class ReviewUpdateDeleteView(RetrieveUpdateDestroyAPIView):
+	"""Allow PATCH and DELETE for a specific review owned by the requester."""
+
+	queryset = Review.objects.all()
+	http_method_names = ['patch', 'delete', 'head', 'options']
+
+	def get_serializer_class(self):
+		if self.request.method == 'PATCH':
+			return ReviewPatchSerializer
+		return ReviewSerializer
+
+	def get_permissions(self):
+		return [IsAuthenticated(), IsReviewOwner()]
+
+	def partial_update(self, request, *args, **kwargs):
+		response = super().partial_update(request, *args, **kwargs)
+		response.data = ReviewSerializer(
+			self.get_object(),
+			context=self.get_serializer_context(),
+		).data
+		return response
