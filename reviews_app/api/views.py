@@ -1,11 +1,35 @@
-from rest_framework import generics, permissions
-from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
+
+from reviews_app.api.serializers import ReviewSerializer
+from reviews_app.models import Review
 
 
-class ReviewsAppStatusView(generics.GenericAPIView):
-	"""Temporary placeholder endpoint until review features are implemented."""
+class ReviewsAppStatusView(ListAPIView):
+	"""List reviews for authenticated users with optional filtering and ordering."""
 
-	permission_classes = [permissions.AllowAny]
+	permission_classes = [IsAuthenticated]
+	serializer_class = ReviewSerializer
+	queryset = Review.objects.all()
 
-	def get(self, request):
-		return Response({'detail': 'Reviews API placeholder endpoint.'})
+	def get_queryset(self):
+		queryset = self._get_filtered_queryset()
+		ordering = self.request.query_params.get('ordering')
+		if not ordering:
+			return queryset
+		if ordering not in {'updated_at', '-updated_at', 'rating', '-rating'}:
+			raise ValidationError({
+				'ordering': 'Ungültiger ordering-Wert. Erlaubt sind: updated_at, -updated_at, rating, -rating.',
+			})
+		return queryset.order_by(ordering)
+
+	def _get_filtered_queryset(self):
+		queryset = self.queryset
+		business_user_id = self.request.query_params.get('business_user_id')
+		reviewer_id = self.request.query_params.get('reviewer_id')
+		if business_user_id:
+			queryset = queryset.filter(business_user_id=business_user_id)
+		if reviewer_id:
+			queryset = queryset.filter(reviewer_id=reviewer_id)
+		return queryset
