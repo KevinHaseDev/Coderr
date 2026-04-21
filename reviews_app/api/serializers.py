@@ -58,3 +58,9 @@ class ReviewSerializer(serializers.ModelSerializer):
 		]
 		read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at']
 
+
+class ReviewPatchSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Review
+		fields = ['rating', 'description']
+
