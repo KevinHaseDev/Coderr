@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from profiles_app.models import Profile
 from reviews_app.models import Review
 
 User = get_user_model()
@@ -131,3 +132,102 @@ class ReviewListApiTests(APITestCase):
 
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertIn('ordering', response.data)
+
+
+class ReviewCreateApiTests(APITestCase):
+	"""Validate POST /api/reviews/ behavior."""
+
+	LIST_URL = '/api/reviews/'
+
+	def setUp(self):
+		self.customer_user = self._create_user_with_profile(
+			'customer_user',
+			Profile.TYPE_CUSTOMER,
+		)
+		self.business_user = self._create_user_with_profile(
+			'business_user_for_reviews',
+			Profile.TYPE_BUSINESS,
+		)
+		self.non_customer_user = self._create_user_with_profile(
+			'non_customer_user',
+			Profile.TYPE_BUSINESS,
+		)
+		self.customer_as_business_target = self._create_user_with_profile(
+			'customer_target_user',
+			Profile.TYPE_CUSTOMER,
+		)
+
+	def _create_user_with_profile(self, username, user_type):
+		user = User.objects.create_user(
+			username=username,
+			email=f'{username}@example.com',
+			password='StrongPass123',
+		)
+		Profile.objects.create(user=user, user_type=user_type)
+		return user
+
+	def test_post_review_requires_authentication(self):
+		payload = {
+			'business_user': self.business_user.id,
+			'rating': 4,
+			'description': 'Alles war toll!',
+		}
+		response = self.client.post(self.LIST_URL, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+	def test_post_review_allows_only_customer_users(self):
+		self.client.force_authenticate(user=self.non_customer_user)
+		payload = {
+			'business_user': self.business_user.id,
+			'rating': 4,
+			'description': 'Business user should be rejected.',
+		}
+		response = self.client.post(self.LIST_URL, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+	def test_post_review_sets_reviewer_automatically(self):
+		self.client.force_authenticate(user=self.customer_user)
+		payload = {
+			'business_user': self.business_user.id,
+			'reviewer': self.non_customer_user.id,
+			'rating': 5,
+			'description': 'Automatisch gesetzter Reviewer.',
+		}
+		response = self.client.post(self.LIST_URL, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+		review = Review.objects.get(id=response.data['id'])
+		self.assertEqual(review.reviewer_id, self.customer_user.id)
+		self.assertEqual(response.data['reviewer'], self.customer_user.id)
+
+	def test_post_review_forbids_duplicate_reviewer_business_user_combination(self):
+		Review.objects.create(
+			business_user=self.business_user,
+			reviewer=self.customer_user,
+			rating=4,
+			description='Bereits vorhanden',
+		)
+		self.client.force_authenticate(user=self.customer_user)
+		payload = {
+			'business_user': self.business_user.id,
+			'rating': 3,
+			'description': 'Doppelte Bewertung',
+		}
+		response = self.client.post(self.LIST_URL, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('non_field_errors', response.data)
+
+	def test_post_review_returns_400_for_invalid_business_user_type(self):
+		self.client.force_authenticate(user=self.customer_user)
+		payload = {
+			'business_user': self.customer_as_business_target.id,
+			'rating': 4,
+			'description': 'Ungültiger business_user Typ',
+		}
+		response = self.client.post(self.LIST_URL, payload, format='json')
+
+		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+		self.assertIn('business_user', response.data)
