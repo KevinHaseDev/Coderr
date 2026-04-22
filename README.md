@@ -45,10 +45,6 @@ python -m pip install -r requirements.txt
 ```
 
 ```bash
-copy .env.example .env
-```
-
-```bash
 python manage.py migrate
 ```
 
