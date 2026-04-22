@@ -18,11 +18,6 @@ class Order(models.Model):
 		(STATUS_CANCELLED, 'Cancelled'),
 	)
 
-	OFFER_TYPE_BASIC = OfferType.BASIC
-	OFFER_TYPE_STANDARD = OfferType.STANDARD
-	OFFER_TYPE_PREMIUM = OfferType.PREMIUM
-	OFFER_TYPE_CHOICES = OfferType.choices
-
 	customer_user = models.ForeignKey(
 		User,
 		on_delete=models.CASCADE,
@@ -38,7 +33,7 @@ class Order(models.Model):
 	delivery_time_in_days = models.PositiveIntegerField()
 	price = models.DecimalField(max_digits=10, decimal_places=2)
 	features = models.JSONField(default=list)
-	offer_type = models.CharField(max_length=20, choices=OFFER_TYPE_CHOICES)
+	offer_type = models.CharField(max_length=20, choices=OfferType.choices)
 	status = models.CharField(
 		max_length=20,
 		choices=STATUS_CHOICES,

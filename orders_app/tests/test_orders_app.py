@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from offers_app.models import Offer, OfferDetail
+from offers_app.models import Offer, OfferDetail, OfferType
 from orders_app.models import Order
 from profiles_app.models import Profile
 
@@ -44,7 +44,7 @@ class OrderListApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='150.00',
 			features=['Logo Design'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 
@@ -125,7 +125,7 @@ class OrderCreateApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='150.00',
 			features=['Logo Design'],
-			offer_type=OfferDetail.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 		)
 
 	def test_post_orders_creates_order_from_offer_detail(self):
@@ -225,7 +225,7 @@ class OrderPatchApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='150.00',
 			features=['Logo Design'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 		self.url = f'/api/orders/{self.order.id}/'
@@ -317,7 +317,7 @@ class OrderDeleteApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='150.00',
 			features=['Logo Design'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 		self.url = f'/api/orders/{self.order.id}/'
@@ -388,7 +388,7 @@ class OrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='100.00',
 			features=['Feature A'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 		Order.objects.create(
@@ -399,7 +399,7 @@ class OrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='120.00',
 			features=['Feature B'],
-			offer_type=Order.OFFER_TYPE_STANDARD,
+			offer_type=OfferType.STANDARD,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 		Order.objects.create(
@@ -410,7 +410,7 @@ class OrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='140.00',
 			features=['Feature C'],
-			offer_type=Order.OFFER_TYPE_PREMIUM,
+			offer_type=OfferType.PREMIUM,
 			status=Order.STATUS_COMPLETED,
 		)
 		Order.objects.create(
@@ -421,7 +421,7 @@ class OrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='160.00',
 			features=['Feature D'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 
@@ -489,7 +489,7 @@ class CompletedOrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='210.00',
 			features=['Feature E'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_COMPLETED,
 		)
 		Order.objects.create(
@@ -500,7 +500,7 @@ class CompletedOrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='240.00',
 			features=['Feature F'],
-			offer_type=Order.OFFER_TYPE_STANDARD,
+			offer_type=OfferType.STANDARD,
 			status=Order.STATUS_COMPLETED,
 		)
 		Order.objects.create(
@@ -511,7 +511,7 @@ class CompletedOrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='260.00',
 			features=['Feature G'],
-			offer_type=Order.OFFER_TYPE_PREMIUM,
+			offer_type=OfferType.PREMIUM,
 			status=Order.STATUS_IN_PROGRESS,
 		)
 		Order.objects.create(
@@ -522,7 +522,7 @@ class CompletedOrderCountApiTests(APITestCase):
 			delivery_time_in_days=5,
 			price='280.00',
 			features=['Feature H'],
-			offer_type=Order.OFFER_TYPE_BASIC,
+			offer_type=OfferType.BASIC,
 			status=Order.STATUS_COMPLETED,
 		)
 

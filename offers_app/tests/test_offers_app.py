@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from offers_app.models import Offer, OfferDetail
+from offers_app.models import Offer, OfferDetail, OfferType
 from profiles_app.models import Profile
 
 User = get_user_model()
@@ -52,9 +52,9 @@ class OfferApiTestBase(APITestCase):
 			image=None,
 		)
 		offer_types = (
-			OfferDetail.OFFER_TYPE_BASIC,
-			OfferDetail.OFFER_TYPE_STANDARD,
-			OfferDetail.OFFER_TYPE_PREMIUM,
+			OfferType.BASIC,
+			OfferType.STANDARD,
+			OfferType.PREMIUM,
 		)
 		labels = ('Basic', 'Standard', 'Premium')
 		for offer_type, label, price, days in zip(
@@ -87,7 +87,7 @@ class OfferApiTestBase(APITestCase):
 					'delivery_time_in_days': 5,
 					'price': 100,
 					'features': ['Feature A'],
-					'offer_type': OfferDetail.OFFER_TYPE_BASIC,
+					'offer_type': OfferType.BASIC,
 				},
 				{
 					'title': 'Standard Package',
@@ -95,7 +95,7 @@ class OfferApiTestBase(APITestCase):
 					'delivery_time_in_days': 7,
 					'price': 200,
 					'features': ['Feature B'],
-					'offer_type': OfferDetail.OFFER_TYPE_STANDARD,
+					'offer_type': OfferType.STANDARD,
 				},
 				{
 					'title': 'Premium Package',
@@ -103,7 +103,7 @@ class OfferApiTestBase(APITestCase):
 					'delivery_time_in_days': 10,
 					'price': 300,
 					'features': ['Feature C'],
-					'offer_type': OfferDetail.OFFER_TYPE_PREMIUM,
+					'offer_type': OfferType.PREMIUM,
 				},
 			],
 		}
@@ -215,7 +215,7 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 		"""Create an offer with details for testing the detail endpoints."""
 		super().setUp()
 		self.offer = self._create_offer(self.owner, title='Detail Offer')
-		self.detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_BASIC)
+		self.detail = self.offer.details.get(offer_type=OfferType.BASIC)
 		self.offer_url = f'/api/offers/{self.offer.id}/'
 		self.offerdetail_url = f'/api/offerdetails/{self.detail.id}/'
 
@@ -253,7 +253,7 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertEqual(response.data['id'], self.detail.id)
 		self.assertEqual(response.data['title'], self.detail.title)
-		self.assertEqual(response.data['offer_type'], OfferDetail.OFFER_TYPE_BASIC)
+		self.assertEqual(response.data['offer_type'], OfferType.BASIC)
 		self.assertEqual(response.data['revisions'], self.detail.revisions)
 
 	def test_get_offerdetail_returns_404_for_unknown_detail(self):
@@ -303,7 +303,7 @@ class OfferCreateApiTests(OfferApiTestBase):
 		"""Test that creating an offer with duplicate offer types is rejected."""
 		self.client.force_authenticate(user=self.owner)
 		payload = self._valid_offer_payload()
-		payload['details'][1]['offer_type'] = OfferDetail.OFFER_TYPE_BASIC
+		payload['details'][1]['offer_type'] = OfferType.BASIC
 		response = self.client.post(self.LIST_URL, payload, format='json')
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertIn('details', response.data)
@@ -331,14 +331,14 @@ class OfferPatchApiTests(OfferApiTestBase):
 
 	def test_patch_offer_updates_target_detail_by_offer_type(self):
 		"""Test that updating an offer updates the correct detail by offer type."""
-		basic_detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_BASIC)
-		standard_detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_STANDARD)
+		basic_detail = self.offer.details.get(offer_type=OfferType.BASIC)
+		standard_detail = self.offer.details.get(offer_type=OfferType.STANDARD)
 		self.client.force_authenticate(user=self.owner)
 		payload = {
 			'title': 'Updated Offer Title',
 			'details': [
 				{
-					'offer_type': OfferDetail.OFFER_TYPE_BASIC,
+					'offer_type': OfferType.BASIC,
 					'price': 120,
 					'revisions': 4,
 				}
