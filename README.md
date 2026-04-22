@@ -21,37 +21,75 @@ Django REST backend for the Coderr marketplace domain.
 
 ## Prerequisites
 
-- Python installed
-- Virtual environment support
+- Python 3.14+
+- Git (optional)
 
-## Setup
+## Environment Template
 
-1. Clone the repository.
-2. Create and activate a virtual environment.
-3. Install dependencies:
+Use the provided template file and copy it to `.env`.
 
-```bash
-pip install -r requirements.txt
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-4. Create a `.env` file in the repository root:
+Windows CMD:
 
-```env
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=127.0.0.1,localhost
+```bat
+copy .env.example .env
 ```
 
-5. Apply migrations:
+macOS/Linux:
 
 ```bash
+cp .env.example .env
+```
+
+## Setup (Copy/Paste)
+
+Run these commands from the repository root.
+
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 python manage.py migrate
+python manage.py runserver
 ```
 
-6. Start the development server:
+### Windows CMD
+
+```bat
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+copy .env.example .env
+python manage.py migrate
+python manage.py runserver
+```
+
+### macOS/Linux
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
 python manage.py runserver
+```
+
+If you do not want to activate the environment, use the virtual environment Python directly.
+
+```powershell
+.\.venv\Scripts\python.exe manage.py runserver
 ```
 
 The API is available under `/api/` and admin under `/admin/`.
@@ -73,21 +111,21 @@ Authorization: Token <your_token>
 
 Run all tests:
 
-```bash
-python manage.py test
+```powershell
+.\.venv\Scripts\python.exe manage.py test
 ```
 
 Run app-specific tests:
 
-```bash
-python manage.py test auth_app info_app offers_app orders_app profiles_app reviews_app
+```powershell
+.\.venv\Scripts\python.exe manage.py test auth_app info_app offers_app orders_app profiles_app reviews_app
 ```
 
 ## Useful Quality Checks
 
-```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
+```powershell
+.\.venv\Scripts\python.exe manage.py check
+.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ```
 
 ## Notes
