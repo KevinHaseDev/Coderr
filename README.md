@@ -28,35 +28,57 @@ Django REST backend for the Coderr marketplace domain.
 
 Run these commands from the repository root.
 
+create the virtual environment (venv)
+Creates an isolated Python environment for this project.
+
 ```bash
-python -m venv .venv
+python -m venv .
 ```
+activate the venv
+Activates the environment so Python and pip use the packages inside .venv.
 
 ```bash
 .\.venv\Scripts\activate.bat
 ```
+upgrade pip
+Ensures you are using the latest package installer.
 
 ```bash
 python -m pip install --upgrade pip
 ```
+install dependencies
+Installs all required packages listed in requirements.txt.
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.
 ```
+apply database migrations
+Creates all database tables based on your Django models.
 
 ```bash
 python manage.py migrate
 ```
+start server
+Starts the Django development server at http://127.0.0.1:8000/.
 
 ```bash
 python manage.py runserver
 ```
-
 If you do not want to activate the environment, use the virtual environment Python directly.
+Runs the server using the Python executable inside .venv without activating it.
 
 ```bash
 .\.venv\Scripts\python.exe manage.py runserver
 ```
+create a .env file (if your project uses environment variables)
+Stores sensitive settings like SECRET_KEY outside the codebase.
+
+Example:
+
+Code
+SECRET_KEY=your_secret_key
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
 
 The API is available under `/api/` and admin under `/admin/`.
 
