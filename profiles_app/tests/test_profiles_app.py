@@ -106,3 +106,85 @@ class ProfileDetailApiTests(APITestCase):
         self.assertEqual(self.user.email, 'new_email@business.de')
         self.assertEqual(response.data['working_hours'], '9-17')
         self.assertEqual(response.data['email'], 'new_email@business.de')
+
+
+class ProfileListApiTests(APITestCase):
+    """Validate business and customer profile list endpoint behavior."""
+
+    def setUp(self):
+        """Create fixture users and profiles for both list endpoints."""
+        self.business_user = User.objects.create_user(
+            username='business_one',
+            email='business_one@example.com',
+            password='StrongPass123',
+        )
+        self.business_user.first_name = 'Berta'
+        self.business_user.last_name = 'Business'
+        self.business_user.save()
+        self.customer_user = User.objects.create_user(
+            username='customer_one',
+            email='customer_one@example.com',
+            password='StrongPass123',
+        )
+        self.customer_user.first_name = 'Clara'
+        self.customer_user.last_name = 'Customer'
+        self.customer_user.save()
+        self.request_user = User.objects.create_user(
+            username='viewer',
+            email='viewer@example.com',
+            password='StrongPass123',
+        )
+        Profile.objects.create(
+            user=self.business_user,
+            user_type=Profile.TYPE_BUSINESS,
+            location='Berlin',
+            telephone='123456789',
+            description='Business profile',
+            working_hours='9-17',
+        )
+        Profile.objects.create(
+            user=self.customer_user,
+            user_type=Profile.TYPE_CUSTOMER,
+        )
+        Profile.objects.create(
+            user=self.request_user,
+            user_type=Profile.TYPE_BUSINESS,
+        )
+        self.business_list_url = reverse('business-profile-list')
+        self.customer_list_url = reverse('customer-profile-list')
+
+    def test_business_list_requires_authentication(self):
+        """Anonymous requests must be rejected for business list endpoint."""
+        response = self.client.get(self.business_list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_customer_list_requires_authentication(self):
+        """Anonymous requests must be rejected for customer list endpoint."""
+        response = self.client.get(self.customer_list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_business_list_returns_array_with_business_profiles_only(self):
+        """Business list should return a JSON array filtered by business type."""
+        self.client.force_authenticate(user=self.request_user)
+        response = self.client.get(self.business_list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 2)
+        self.assertTrue(all(item['type'] == Profile.TYPE_BUSINESS for item in response.data))
+        first_item = response.data[0]
+        self.assertIn('location', first_item)
+        self.assertIn('tel', first_item)
+        self.assertIn('description', first_item)
+        self.assertIn('working_hours', first_item)
+
+    def test_customer_list_returns_array_with_customer_profiles_only(self):
+        """Customer list should return a JSON array filtered by customer type."""
+        self.client.force_authenticate(user=self.request_user)
+        response = self.client.get(self.customer_list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 1)
+        profile = response.data[0]
+        self.assertEqual(profile['username'], 'customer_one')
+        self.assertEqual(profile['type'], Profile.TYPE_CUSTOMER)
+        self.assertIn('uploaded_at', profile)

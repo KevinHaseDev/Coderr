@@ -3,7 +3,86 @@ from rest_framework import serializers
 from profiles_app.models import Profile
 
 
-class ProfileDetailSerializer(serializers.ModelSerializer):
+class NonNullFieldsMixin:
+	"""Convert configured response fields from null to empty strings."""
+
+	NON_NULL_RESPONSE_FIELDS = ()
+
+	def to_representation(self, instance):
+		"""Normalize selected fields in serialized output."""
+		data = super().to_representation(instance)
+		for field in self.NON_NULL_RESPONSE_FIELDS:
+			if data.get(field) is None:
+				data[field] = ''
+		return data
+
+
+class BusinessProfileListSerializer(NonNullFieldsMixin, serializers.ModelSerializer):
+	"""Serialize business profile list rows for public profile listings."""
+
+	NON_NULL_RESPONSE_FIELDS = (
+		'first_name',
+		'last_name',
+		'location',
+		'tel',
+		'description',
+		'working_hours',
+	)
+
+	user = serializers.IntegerField(source='user.id', read_only=True)
+	username = serializers.CharField(source='user.username', read_only=True)
+	first_name = serializers.CharField(source='user.first_name', read_only=True)
+	last_name = serializers.CharField(source='user.last_name', read_only=True)
+	file = serializers.FileField(read_only=True, allow_null=True, use_url=False)
+	tel = serializers.CharField(source='telephone', read_only=True)
+	type = serializers.CharField(source='user_type', read_only=True)
+
+	class Meta:
+		model = Profile
+		fields = [
+			'user',
+			'username',
+			'first_name',
+			'last_name',
+			'file',
+			'location',
+			'tel',
+			'description',
+			'working_hours',
+			'type',
+		]
+
+
+class CustomerProfileListSerializer(NonNullFieldsMixin, serializers.ModelSerializer):
+	"""Serialize customer profile list rows for profile listings."""
+
+	NON_NULL_RESPONSE_FIELDS = (
+		'first_name',
+		'last_name',
+	)
+
+	user = serializers.IntegerField(source='user.id', read_only=True)
+	username = serializers.CharField(source='user.username', read_only=True)
+	first_name = serializers.CharField(source='user.first_name', read_only=True)
+	last_name = serializers.CharField(source='user.last_name', read_only=True)
+	file = serializers.FileField(read_only=True, allow_null=True, use_url=False)
+	uploaded_at = serializers.DateTimeField(source='created_at', read_only=True)
+	type = serializers.CharField(source='user_type', read_only=True)
+
+	class Meta:
+		model = Profile
+		fields = [
+			'user',
+			'username',
+			'first_name',
+			'last_name',
+			'file',
+			'uploaded_at',
+			'type',
+		]
+
+
+class ProfileDetailSerializer(NonNullFieldsMixin, serializers.ModelSerializer):
 	"""Serialize and update profile details for a single user profile."""
 
 	NON_NULL_RESPONSE_FIELDS = (
@@ -59,12 +138,6 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 		instance.save()
 		return instance
 
-	def to_representation(self, instance):
-		"""Ensure required response fields are never serialized as null."""
-		data = super().to_representation(instance)
-		self._replace_none_with_blank(data)
-		return data
-
 	def _update_user(self, user, user_data):
 		"""Persist nested user attributes if they were provided."""
 		if not user_data:
@@ -73,8 +146,3 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 			setattr(user, field, value)
 		user.save()
 
-	def _replace_none_with_blank(self, data):
-		"""Normalize selected response fields from null to empty strings."""
-		for field in self.NON_NULL_RESPONSE_FIELDS:
-			if data.get(field) is None:
-				data[field] = ''
