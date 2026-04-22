@@ -24,75 +24,53 @@ Django REST backend for the Coderr marketplace domain.
 - Python 3.14+
 - Git (optional)
 
-## Environment Template
-
-Use the provided template file and copy it to `.env`.
-
-Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Windows CMD:
-
-```bat
-copy .env.example .env
-```
-
-macOS/Linux:
-
-```bash
-cp .env.example .env
-```
-
 ## Setup (Copy/Paste)
 
 Run these commands from the repository root.
 
-### Windows PowerShell
-
-```powershell
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-python manage.py migrate
-python manage.py runserver
 ```
-
-### Windows CMD
-
-```bat
-python -m venv .venv
-.\.venv\Scripts\activate.bat
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-copy .env.example .env
-python manage.py migrate
-python manage.py runserver
-```
-
-### macOS/Linux
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+.\.venv\Scripts\activate.bat
+```
+
+```bash
 python -m pip install --upgrade pip
+```
+
+```bash
 python -m pip install -r requirements.txt
-cp .env.example .env
+```
+
+```bash
+copy .env.example .env
+```
+
+```bash
 python manage.py migrate
+```
+
+```bash
 python manage.py runserver
 ```
 
 If you do not want to activate the environment, use the virtual environment Python directly.
 
-```powershell
+```bash
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
 The API is available under `/api/` and admin under `/admin/`.
+
+## Environment Template
+
+Use the provided template file and copy it to `.env`.
+
+```bash
+copy .env.example .env
+```
 
 ## Authentication
 
@@ -111,19 +89,19 @@ Authorization: Token <your_token>
 
 Run all tests:
 
-```powershell
+```bash
 .\.venv\Scripts\python.exe manage.py test
 ```
 
 Run app-specific tests:
 
-```powershell
+```bash
 .\.venv\Scripts\python.exe manage.py test auth_app info_app offers_app orders_app profiles_app reviews_app
 ```
 
 ## Useful Quality Checks
 
-```powershell
+```bash
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ```
