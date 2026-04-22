@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from core.api.permissions import IsCustomerUser
+from profiles_app.api.permissions import IsCustomerUser
 
 
 class IsReviewOwner(BasePermission):

@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from core.api.permissions import IsBusinessUser
+from profiles_app.api.permissions import IsBusinessUser
 
 
 class IsOfferOwner(BasePermission):
