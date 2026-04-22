@@ -9,6 +9,7 @@ class IsOfferOwner(BasePermission):
 	message = 'Only the offer owner can modify or delete this offer.'
 
 	def has_object_permission(self, request, view, obj):
+		"""Grant permission only when request user owns the target offer."""
 		return bool(
 			request.user
 			and request.user.is_authenticated

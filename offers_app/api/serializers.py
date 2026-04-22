@@ -51,6 +51,7 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 		read_only_fields = ['id']
 
 	def validate_details(self, value):
+		"""Validate that exactly three details with unique offer types are provided."""
 		if len(value) != 3:
 			raise serializers.ValidationError('Exactly 3 details are required.')
 		offer_types = [detail['offer_type'] for detail in value]
@@ -59,6 +60,7 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 		return value
 
 	def create(self, validated_data):
+		"""Create an offer with its associated details."""
 		details_data = validated_data.pop('details')
 		with transaction.atomic():
 			offer = Offer.objects.create(**validated_data)
@@ -106,6 +108,7 @@ class OfferPatchSerializer(serializers.ModelSerializer):
 		}
 
 	def validate_details(self, value):
+		"""Validate that provided details have unique offer types."""
 		offer_types = []
 		for index, detail in enumerate(value):
 			detail_type = detail.get('offer_type')
@@ -117,6 +120,7 @@ class OfferPatchSerializer(serializers.ModelSerializer):
 		return value
 
 	def update(self, instance, validated_data):
+		"""Update offer fields and optionally its details within a transaction."""
 		details_data = validated_data.pop('details', None)
 		with transaction.atomic():
 			self._update_offer_fields(instance, validated_data)
@@ -125,11 +129,13 @@ class OfferPatchSerializer(serializers.ModelSerializer):
 		return instance
 
 	def _update_offer_fields(self, instance, validated_data):
+		"""Update offer fields with validated data."""
 		for field, value in validated_data.items():
 			setattr(instance, field, value)
 		instance.save()
 
 	def _update_offer_details(self, instance, details_data):
+		"""Update offer details with validated data."""
 		details_by_type = {detail.offer_type: detail for detail in instance.details.all()}
 		for detail_data in details_data:
 			detail_data = dict(detail_data)

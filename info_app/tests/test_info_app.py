@@ -17,6 +17,7 @@ class BaseInfoApiTests(APITestCase):
     URL = '/api/base-info/'
 
     def _create_user_with_profile(self, username, user_type):
+        """Helper to create a user with a profile of the specified type."""
         user = User.objects.create_user(
             username=username,
             email=f'{username}@example.com',
@@ -26,11 +27,13 @@ class BaseInfoApiTests(APITestCase):
         return user
 
     def test_base_info_is_public(self):
+        """Test that the base info endpoint is accessible without authentication."""
         response = self.client.get(self.URL)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_base_info_returns_aggregated_counts(self):
+        """Test that the base info endpoint returns correct aggregated counts and average rating."""
         business_one = self._create_user_with_profile(
             'business_one',
             Profile.TYPE_BUSINESS,
@@ -83,6 +86,7 @@ class BaseInfoApiTests(APITestCase):
         self.assertEqual(response.data['offer_count'], 2)
 
     def test_base_info_returns_zero_average_without_reviews(self):
+        """Test that the average rating is returned as 0.0 when there are no reviews."""
         self._create_user_with_profile('business_only', Profile.TYPE_BUSINESS)
 
         response = self.client.get(self.URL)

@@ -18,6 +18,7 @@ class OfferApiTestBase(APITestCase):
 	LIST_URL = '/api/offers/'
 
 	def setUp(self):
+		"""Create test users and profiles."""
 		self.owner = self._create_user('owner_business', Profile.TYPE_BUSINESS)
 		self.other_business = self._create_user(
 			'other_business',
@@ -26,6 +27,7 @@ class OfferApiTestBase(APITestCase):
 		self.customer = self._create_user('customer_user', Profile.TYPE_CUSTOMER)
 
 	def _create_user(self, username, user_type):
+		"""Create a user with the specified username and type."""
 		user = User.objects.create_user(
 			username=username,
 			email=f'{username}@example.com',
@@ -42,6 +44,7 @@ class OfferApiTestBase(APITestCase):
 		prices=(100, 200, 300),
 		delivery_days=(5, 7, 10),
 	):
+		"""Create an offer with associated details for testing."""
 		offer = Offer.objects.create(
 			user=user,
 			title=title,
@@ -72,6 +75,7 @@ class OfferApiTestBase(APITestCase):
 		return offer
 
 	def _valid_offer_payload(self, title='New Offer'):
+		"""Generate a valid payload for creating an offer with three details."""
 		return {
 			'title': title,
 			'image': None,
@@ -109,12 +113,14 @@ class OfferListApiTests(OfferApiTestBase):
 	"""Tests for GET /api/offers/ list behavior."""
 
 	def test_get_offers_is_public(self):
+		"""Test that the offer list endpoint is accessible without authentication."""
 		self._create_offer(self.owner, title='Public Offer')
 		response = self.client.get(self.LIST_URL)
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
 		self.assertEqual(response.data['count'], 1)
 
 	def test_get_offers_uses_pagination(self):
+		"""Test that the offer list endpoint uses pagination."""
 		for index in range(7):
 			self._create_offer(self.owner, title=f'Offer {index}')
 		response = self.client.get(self.LIST_URL)
@@ -124,6 +130,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertIsNotNone(response.data['next'])
 
 	def test_get_offers_supports_page_size_parameter(self):
+		"""Test that the offer list endpoint supports the page_size query parameter."""
 		for index in range(5):
 			self._create_offer(self.owner, title=f'Page Offer {index}')
 		response = self.client.get(self.LIST_URL, {'page_size': 2})
@@ -131,6 +138,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertEqual(len(response.data['results']), 2)
 
 	def test_get_offers_filters_by_creator_id(self):
+		"""Test that the offer list endpoint can filter offers by the creator's user ID."""
 		owner_offer = self._create_offer(self.owner, title='Owner Offer')
 		self._create_offer(self.other_business, title='Other Offer')
 		response = self.client.get(self.LIST_URL, {'creator_id': self.owner.id})
@@ -139,6 +147,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertEqual(response.data['results'][0]['id'], owner_offer.id)
 
 	def test_get_offers_filters_by_min_price(self):
+		"""Test that the offer list endpoint can filter offers by the minimum price."""
 		self._create_offer(
 			self.owner,
 			title='Low Price Offer',
@@ -155,6 +164,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertEqual(response.data['results'][0]['id'], high_offer.id)
 
 	def test_get_offers_filters_by_max_delivery_time(self):
+		"""Test that the offer list endpoint can filter offers by the maximum delivery time."""
 		fast_offer = self._create_offer(
 			self.owner,
 			title='Fast Offer',
@@ -171,6 +181,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertEqual(response.data['results'][0]['id'], fast_offer.id)
 
 	def test_get_offers_supports_ordering_by_min_price(self):
+		"""Test that the offer list endpoint can order offers by minimum price."""
 		high_offer = self._create_offer(self.owner, title='High', prices=(300, 350, 400))
 		low_offer = self._create_offer(self.owner, title='Low', prices=(100, 150, 200))
 		mid_offer = self._create_offer(self.owner, title='Mid', prices=(200, 250, 300))
@@ -180,6 +191,7 @@ class OfferListApiTests(OfferApiTestBase):
 		self.assertEqual(ids, [low_offer.id, mid_offer.id, high_offer.id])
 
 	def test_get_offers_supports_search_in_title_and_description(self):
+		"""Test that the offer list endpoint can search offers by title and description."""
 		self._create_offer(
 			self.owner,
 			title='Logo Design',
@@ -200,6 +212,7 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 	"""Tests for GET /api/offers/{id}/ and /api/offerdetails/{id}/."""
 
 	def setUp(self):
+		"""Create an offer with details for testing the detail endpoints."""
 		super().setUp()
 		self.offer = self._create_offer(self.owner, title='Detail Offer')
 		self.detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_BASIC)
@@ -207,10 +220,12 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 		self.offerdetail_url = f'/api/offerdetails/{self.detail.id}/'
 
 	def test_get_offer_detail_requires_authentication(self):
+		"""Test that accessing an offer detail requires authentication."""
 		response = self.client.get(self.offer_url)
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 	def test_get_offer_detail_returns_offer_data_with_detail_urls(self):
+		"""Test that the offer detail endpoint returns offer data with detail URLs."""
 		self.client.force_authenticate(user=self.owner)
 		response = self.client.get(self.offer_url)
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -221,15 +236,18 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 		self.assertEqual(response.data['min_delivery_time'], 5)
 
 	def test_get_offer_detail_returns_404_for_unknown_offer(self):
+		"""Test that accessing a non-existent offer returns a 404 status."""
 		self.client.force_authenticate(user=self.owner)
 		response = self.client.get('/api/offers/999999/')
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 	def test_get_offerdetail_requires_authentication(self):
+		"""Test that accessing an offer detail requires authentication."""
 		response = self.client.get(self.offerdetail_url)
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 	def test_get_offerdetail_returns_full_payload(self):
+		"""Test that the offer detail endpoint returns the full payload."""
 		self.client.force_authenticate(user=self.owner)
 		response = self.client.get(self.offerdetail_url)
 		self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -239,6 +257,7 @@ class OfferDetailReadApiTests(OfferApiTestBase):
 		self.assertEqual(response.data['revisions'], self.detail.revisions)
 
 	def test_get_offerdetail_returns_404_for_unknown_detail(self):
+		"""Test that accessing a non-existent offer detail returns a 404 status."""
 		self.client.force_authenticate(user=self.owner)
 		response = self.client.get('/api/offerdetails/999999/')
 		self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -248,17 +267,20 @@ class OfferCreateApiTests(OfferApiTestBase):
 	"""Tests for POST /api/offers/."""
 
 	def test_post_offer_requires_authentication(self):
+		"""Test that creating an offer requires authentication."""
 		payload = self._valid_offer_payload()
 		response = self.client.post(self.LIST_URL, payload, format='json')
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 	def test_post_offer_requires_business_profile(self):
+		"""Test that only users with a business profile can create offers."""
 		self.client.force_authenticate(user=self.customer)
 		payload = self._valid_offer_payload()
 		response = self.client.post(self.LIST_URL, payload, format='json')
 		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 	def test_post_offer_creates_offer_with_three_details(self):
+		"""Test that creating an offer with valid data creates an offer with three details."""
 		self.client.force_authenticate(user=self.owner)
 		payload = self._valid_offer_payload(title='Created Offer')
 		response = self.client.post(self.LIST_URL, payload, format='json')
@@ -269,6 +291,7 @@ class OfferCreateApiTests(OfferApiTestBase):
 		self.assertEqual(len(response.data['details']), 3)
 
 	def test_post_offer_rejects_invalid_detail_count(self):
+		"""Test that creating an offer with fewer than three details is rejected."""
 		self.client.force_authenticate(user=self.owner)
 		payload = self._valid_offer_payload()
 		payload['details'] = payload['details'][:2]
@@ -277,6 +300,7 @@ class OfferCreateApiTests(OfferApiTestBase):
 		self.assertIn('details', response.data)
 
 	def test_post_offer_rejects_duplicate_offer_type(self):
+		"""Test that creating an offer with duplicate offer types is rejected."""
 		self.client.force_authenticate(user=self.owner)
 		payload = self._valid_offer_payload()
 		payload['details'][1]['offer_type'] = OfferDetail.OFFER_TYPE_BASIC
@@ -289,20 +313,24 @@ class OfferPatchApiTests(OfferApiTestBase):
 	"""Tests for PATCH /api/offers/{id}/."""
 
 	def setUp(self):
+		"""Create an offer for testing PATCH behavior."""
 		super().setUp()
 		self.offer = self._create_offer(self.owner, title='Patch Offer')
 		self.url = f'/api/offers/{self.offer.id}/'
 
 	def test_patch_offer_requires_authentication(self):
+		"""Test that updating an offer requires authentication."""
 		response = self.client.patch(self.url, {'title': 'Updated'}, format='json')
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 	def test_patch_offer_forbidden_for_non_owner(self):
+		"""Test that only the offer owner can update the offer."""
 		self.client.force_authenticate(user=self.other_business)
 		response = self.client.patch(self.url, {'title': 'Updated'}, format='json')
 		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 	def test_patch_offer_updates_target_detail_by_offer_type(self):
+		"""Test that updating an offer updates the correct detail by offer type."""
 		basic_detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_BASIC)
 		standard_detail = self.offer.details.get(offer_type=OfferDetail.OFFER_TYPE_STANDARD)
 		self.client.force_authenticate(user=self.owner)
@@ -327,6 +355,7 @@ class OfferPatchApiTests(OfferApiTestBase):
 		self.assertEqual(standard_detail.price, Decimal('200'))
 
 	def test_patch_offer_requires_offer_type_for_detail_updates(self):
+		"""Test that updating offer detail requires specifying the offer type."""
 		self.client.force_authenticate(user=self.owner)
 		payload = {'details': [{'price': 120}]}
 		response = self.client.patch(self.url, payload, format='json')
@@ -338,20 +367,24 @@ class OfferDeleteApiTests(OfferApiTestBase):
 	"""Tests for DELETE /api/offers/{id}/."""
 
 	def setUp(self):
+		"""Create an offer for testing DELETE behavior."""
 		super().setUp()
 		self.offer = self._create_offer(self.owner, title='Delete Offer')
 		self.url = f'/api/offers/{self.offer.id}/'
 
 	def test_delete_offer_requires_authentication(self):
+		"""Test that deleting an offer requires authentication."""
 		response = self.client.delete(self.url)
 		self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 	def test_delete_offer_forbidden_for_non_owner(self):
+		"""Test that only the offer owner can delete the offer."""
 		self.client.force_authenticate(user=self.other_business)
 		response = self.client.delete(self.url)
 		self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 	def test_delete_offer_returns_204_and_removes_object(self):
+		"""Test that deleting an offer returns a 204 status and removes the offer from the database."""
 		self.client.force_authenticate(user=self.owner)
 		response = self.client.delete(self.url)
 		self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

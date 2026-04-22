@@ -16,6 +16,7 @@ class RegistrationApiTests(APITestCase):
 	URL = '/api/registration/'
 
 	def test_registration_creates_user_profile_and_token(self):
+		"""Test that a new user can register and receives a token and profile."""
 		payload = {
 			'username': 'new_customer',
 			'email': 'new_customer@example.com',
@@ -32,6 +33,7 @@ class RegistrationApiTests(APITestCase):
 		self.assertEqual(created_user.profile.user_type, Profile.TYPE_CUSTOMER)
 
 	def test_registration_rejects_duplicate_username(self):
+		"""Test that registration fails if the username is already taken."""
 		User.objects.create_user(
 			username='existing_user',
 			email='old@example.com',
@@ -50,6 +52,7 @@ class RegistrationApiTests(APITestCase):
 		self.assertIn('username', response.data)
 
 	def test_registration_rejects_password_mismatch(self):
+		"""Test that registration fails if password and repeated password do not match."""
 		payload = {
 			'username': 'mismatch_user',
 			'email': 'mismatch@example.com',
@@ -69,6 +72,7 @@ class LoginApiTests(APITestCase):
 	URL = '/api/login/'
 
 	def setUp(self):
+		"""Create a user for login tests."""
 		self.user = User.objects.create_user(
 			username='login_user',
 			email='login_user@example.com',
@@ -76,6 +80,7 @@ class LoginApiTests(APITestCase):
 		)
 
 	def test_login_returns_token_for_valid_credentials(self):
+		"""Test that login returns a token for valid credentials."""
 		response = self.client.post(
 			self.URL,
 			{'username': 'login_user', 'password': 'StrongPass123'},
@@ -87,6 +92,8 @@ class LoginApiTests(APITestCase):
 		self.assertEqual(response.data['username'], self.user.username)
 
 	def test_login_rejects_invalid_credentials(self):
+		"""Test that login fails with invalid credentials."""
+
 		response = self.client.post(
 			self.URL,
 			{'username': 'login_user', 'password': 'WrongPassword'},

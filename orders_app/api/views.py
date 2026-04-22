@@ -24,16 +24,19 @@ class OrderListCreateView(generics.ListCreateAPIView):
 	http_method_names = ['get', 'post', 'head', 'options']
 
 	def get_serializer_class(self):
+		"""Return the appropriate serializer class based on the HTTP method."""
 		if self.request.method == 'POST':
 			return OrderCreateSerializer
 		return OrderReadSerializer
 
 	def get_permissions(self):
+		"""Return permission classes based on the HTTP method."""
 		if self.request.method == 'POST':
 			return [permissions.IsAuthenticated(), IsCustomerUser()]
 		return [permissions.IsAuthenticated()]
 
 	def get_queryset(self):
+		"""Return orders related to the authenticated user, ordered by most recent updates."""
 		user = self.request.user
 		return self.queryset.filter(
 			Q(customer_user=user) | Q(business_user=user)
@@ -47,11 +50,13 @@ class OrderUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 	http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
 	def get_serializer_class(self):
+		"""Return the appropriate serializer class based on the HTTP method."""
 		if self.request.method == 'PATCH':
 			return OrderStatusPatchSerializer
 		return OrderReadSerializer
 
 	def get_permissions(self):
+		"""Return permission classes based on the HTTP method."""
 		if self.request.method == 'PATCH':
 			return [permissions.IsAuthenticated(), IsAssignedBusinessUser()]
 		if self.request.method == 'DELETE':
@@ -59,6 +64,7 @@ class OrderUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 		return [permissions.IsAuthenticated()]
 
 	def partial_update(self, request, *args, **kwargs):
+		"""Override partial_update to return the full order data after status update."""
 		response = super().partial_update(request, *args, **kwargs)
 		response.data = OrderReadSerializer(
 			self.get_object(),
@@ -75,11 +81,13 @@ class BaseOrderCountView(generics.GenericAPIView):
 	response_key = 'order_count'
 
 	def get(self, request, business_user_id):
+		"""Return the count of orders for the specified business user and status."""
 		self._ensure_business_profile_exists(business_user_id)
 		order_count = self._get_order_count(business_user_id)
 		return Response({self.response_key: order_count})
 
 	def _ensure_business_profile_exists(self, business_user_id):
+		"""Check that a business profile exists for the specified user id."""
 		if not Profile.objects.filter(
 			user_id=business_user_id,
 			user_type=Profile.TYPE_BUSINESS,
@@ -87,6 +95,7 @@ class BaseOrderCountView(generics.GenericAPIView):
 			raise NotFound('No business user found with the provided id.')
 
 	def _get_order_count(self, business_user_id):
+		"""Return the count of orders for the specified business user and status."""
 		return Order.objects.filter(
 			business_user_id=business_user_id,
 			status=self.status,

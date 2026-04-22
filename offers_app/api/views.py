@@ -30,19 +30,23 @@ class OfferListView(generics.ListCreateAPIView):
 	pagination_class = OfferListPagination
 
 	def get_serializer_class(self):
+		"""Use a different serializer for offer creation to enforce detail requirements."""
 		if self.request.method == 'POST':
 			return OfferCreateSerializer
 		return OfferSerializer
 
 	def get_permissions(self):
+		"""Return the appropriate permissions based on the request method."""
 		if self.request.method == 'POST':
 			return [permissions.IsAuthenticated(), IsBusinessUser()]
 		return [permissions.AllowAny()]
 
 	def perform_create(self, serializer):
+		"""Save the new offer with the authenticated user as the owner."""
 		serializer.save(user=self.request.user)
 
 	def get_queryset(self):
+		"""Return a queryset of offers with optional filtering, search, and ordering."""
 		queryset = Offer.objects.select_related('user').prefetch_related('details')
 		queryset = queryset.annotate(
 			min_price=Min('details__price'),
@@ -55,30 +59,35 @@ class OfferListView(generics.ListCreateAPIView):
 		return self._apply_ordering(queryset)
 
 	def _filter_by_creator(self, queryset):
+		"""Filter offers by the creator's user ID."""
 		creator_id = self._get_int_query_param('creator_id', min_value=1)
 		if creator_id is None:
 			return queryset
 		return queryset.filter(user_id=creator_id)
 
 	def _filter_by_min_price(self, queryset):
+		"""Filter offers by the minimum price."""
 		min_price = self._get_decimal_query_param('min_price', min_value=Decimal('0'))
 		if min_price is None:
 			return queryset
 		return queryset.filter(min_price__gte=min_price)
 
 	def _filter_by_max_delivery_time(self, queryset):
+		"""Filter offers by the maximum delivery time."""
 		max_delivery_time = self._get_int_query_param('max_delivery_time', min_value=1)
 		if max_delivery_time is None:
 			return queryset
 		return queryset.filter(min_delivery_time__lte=max_delivery_time)
 
 	def _apply_search(self, queryset):
+		"""Apply a search filter on offer title and description."""
 		search = self.request.query_params.get('search', '').strip()
 		if not search:
 			return queryset
 		return queryset.filter(Q(title__icontains=search) | Q(description__icontains=search))
 
 	def _apply_ordering(self, queryset):
+		"""Apply ordering to the queryset based on query parameters."""
 		ordering = self.request.query_params.get('ordering', '-updated_at').strip()
 		allowed = {'updated_at', 'min_price'}
 		field = ordering.lstrip('-')
@@ -89,6 +98,7 @@ class OfferListView(generics.ListCreateAPIView):
 		return queryset.order_by(ordering, '-id')
 
 	def _get_int_query_param(self, name, min_value):
+		"""Extract and validate an integer query parameter with a minimum value."""
 		raw_value = self.request.query_params.get(name)
 		if raw_value in (None, ''):
 			return None
@@ -101,6 +111,7 @@ class OfferListView(generics.ListCreateAPIView):
 		return value
 
 	def _get_decimal_query_param(self, name, min_value):
+		"""Extract and validate a decimal query parameter with a minimum value."""
 		raw_value = self.request.query_params.get(name)
 		if raw_value in (None, ''):
 			return None
@@ -120,16 +131,19 @@ class OfferRetrieveView(generics.RetrieveUpdateDestroyAPIView):
 	http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
 	def get_serializer_class(self):
+		"""Use a different serializer for PATCH requests to allow partial updates."""
 		if self.request.method == 'PATCH':
 			return OfferPatchSerializer
 		return OfferSerializer
 
 	def get_permissions(self):
+		"""Return the appropriate permissions based on the request method."""
 		if self.request.method in {'PATCH', 'DELETE'}:
 			return [permissions.IsAuthenticated(), IsOfferOwner()]
 		return [permissions.IsAuthenticated()]
 
 	def partial_update(self, request, *args, **kwargs):
+		"""Partially update an offer and return the updated data."""
 		response = super().partial_update(request, *args, **kwargs)
 		response.data = OfferSerializer(
 			self.get_object(),

@@ -13,6 +13,7 @@ class BaseInfoView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        """Return aggregated platform information including review count, average rating, business profile count, and offer count."""
         average_rating = Review.objects.aggregate(value=Avg('rating'))['value']
         rounded_average_rating = 0.0 if average_rating is None else round(float(average_rating), 1)
         return Response(

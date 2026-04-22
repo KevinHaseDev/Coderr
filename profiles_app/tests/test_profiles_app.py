@@ -10,6 +10,7 @@ class ProfileDetailApiTests(APITestCase):
     """Validate profile detail retrieve and patch endpoint behavior."""
 
     def setUp(self):
+        """Set up test data with two users and their profiles."""
         self.user = User.objects.create_user(
             username='max_mustermann',
             email='max@example.com',

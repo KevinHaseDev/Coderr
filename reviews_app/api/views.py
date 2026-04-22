@@ -15,14 +15,17 @@ class ReviewListCreateView(ListCreateAPIView):
 	queryset = Review.objects.all()
 
 	def get_permissions(self):
+		"""Return permission classes based on the HTTP method."""
 		if self.request.method == 'POST':
 			return [IsCustomerUser()]
 		return [IsAuthenticated()]
 
 	def perform_create(self, serializer):
+		"""Set the reviewer to the authenticated user when creating a new review."""
 		serializer.save(reviewer=self.request.user)
 
 	def get_queryset(self):
+		"""Return the queryset with optional filtering based on query parameters."""
 		queryset = self._get_filtered_queryset()
 		ordering = self.request.query_params.get('ordering')
 		if not ordering:
@@ -32,8 +35,9 @@ class ReviewListCreateView(ListCreateAPIView):
 				'ordering': 'Ungültiger ordering-Wert. Erlaubt sind: updated_at, -updated_at, rating, -rating.',
 			})
 		return queryset.order_by(ordering)
-
+	
 	def _get_filtered_queryset(self):
+		"""Return the queryset filtered based on query parameters."""
 		queryset = self.queryset.all()
 		business_user_id = self.request.query_params.get('business_user_id')
 		reviewer_id = self.request.query_params.get('reviewer_id')
@@ -51,14 +55,17 @@ class ReviewUpdateDeleteView(RetrieveUpdateDestroyAPIView):
 	http_method_names = ['patch', 'delete', 'head', 'options']
 
 	def get_serializer_class(self):
+		"""Return the appropriate serializer class based on the HTTP method."""
 		if self.request.method == 'PATCH':
 			return ReviewPatchSerializer
 		return ReviewSerializer
 
 	def get_permissions(self):
+		"""Return permission classes based on the HTTP method."""
 		return [IsAuthenticated(), IsReviewOwner()]
 
 	def partial_update(self, request, *args, **kwargs):
+		"""Handle PATCH requests to update a review and return the full review data in the response."""
 		response = super().partial_update(request, *args, **kwargs)
 		response.data = ReviewSerializer(
 			self.get_object(),

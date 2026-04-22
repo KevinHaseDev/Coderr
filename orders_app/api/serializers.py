@@ -67,6 +67,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 		]
 
 	def create(self, validated_data):
+		"""Create an order instance based on the selected offer detail and authenticated customer user."""
 		offer_detail = validated_data.pop('offer_detail')
 		customer_user = self._get_customer_user()
 		return Order.objects.create(
@@ -81,6 +82,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 		)
 
 	def _get_customer_user(self):
+		"""Extract the authenticated customer user from the serializer context."""
 		request = self.context.get('request')
 		user = getattr(request, 'user', None)
 		if user and user.is_authenticated:

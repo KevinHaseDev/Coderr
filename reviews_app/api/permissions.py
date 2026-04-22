@@ -9,6 +9,7 @@ class IsReviewOwner(BasePermission):
 	message = 'Only the review owner can modify or delete this review.'
 
 	def has_object_permission(self, request, view, obj):
+		"""Grant permission only when request user owns the target review."""
 		return bool(
 			request.user
 			and request.user.is_authenticated

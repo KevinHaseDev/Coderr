@@ -17,6 +17,7 @@ class OrderListApiTests(APITestCase):
 	LIST_URL = '/api/orders/'
 
 	def setUp(self):
+		"""Set up test data with multiple orders for different users."""
 		self.user = User.objects.create_user(
 			username='orders_user',
 			email='orders_user@example.com',
@@ -34,6 +35,7 @@ class OrderListApiTests(APITestCase):
 		)
 
 	def _create_order(self, customer_user, business_user, title):
+		"""Helper method to create an order with specified users and title."""
 		return Order.objects.create(
 			customer_user=customer_user,
 			business_user=business_user,
@@ -89,6 +91,7 @@ class OrderCreateApiTests(APITestCase):
 	LIST_URL = '/api/orders/'
 
 	def setUp(self):
+		"""Set up test data with offer details and users with different roles."""
 		self.customer_user = User.objects.create_user(
 			username='customer_for_post',
 			email='customer_for_post@example.com',
@@ -184,6 +187,7 @@ class OrderPatchApiTests(APITestCase):
 	"""Validate PATCH /api/orders/{id}/ permission and validation behavior."""
 
 	def setUp(self):
+		"""Set up test data with an order and different user roles."""
 		self.customer_user = User.objects.create_user(
 			username='customer_for_patch',
 			email='customer_for_patch@example.com',
@@ -278,6 +282,7 @@ class OrderDeleteApiTests(APITestCase):
 	"""Validate DELETE /api/orders/{id}/ permission and response behavior."""
 
 	def setUp(self):
+		"""Set up test data with an order and users with different permissions."""
 		self.customer_user = User.objects.create_user(
 			username='customer_for_delete',
 			email='customer_for_delete@example.com',
@@ -345,6 +350,7 @@ class OrderCountApiTests(APITestCase):
 	"""Validate GET /api/order-count/{business_user_id}/ behavior."""
 
 	def setUp(self):
+		"""Set up test data with multiple orders for different business users and statuses."""
 		self.auth_user = User.objects.create_user(
 			username='count_auth_user',
 			email='count_auth_user@example.com',
@@ -445,6 +451,7 @@ class CompletedOrderCountApiTests(APITestCase):
 	"""Validate GET /api/completed-order-count/{business_user_id}/ behavior."""
 
 	def setUp(self):
+		"""Set up test data with multiple orders for different business users and statuses."""
 		self.auth_user = User.objects.create_user(
 			username='completed_count_auth_user',
 			email='completed_count_auth_user@example.com',

@@ -9,9 +9,11 @@ class IsAssignedBusinessUser(BasePermission):
 	message = 'Only the assigned business user can update this order status.'
 
 	def has_permission(self, request, view):
+		"""Check that the authenticated user is a business user."""
 		return IsBusinessUser().has_permission(request, view)
 
 	def has_object_permission(self, request, view, obj):
+		"""Grant permission only when request user is the assigned business user."""
 		return bool(
 			request.user
 			and request.user.is_authenticated
@@ -25,6 +27,7 @@ class IsStaffUserForDelete(BasePermission):
 	message = 'Only staff users can delete orders.'
 
 	def has_permission(self, request, view):
+		"""Check that the authenticated user is a staff user."""
 		return bool(
 			request.user
 			and request.user.is_authenticated
@@ -32,4 +35,5 @@ class IsStaffUserForDelete(BasePermission):
 		)
 
 	def has_object_permission(self, request, view, obj):
+		"""Grant permission only when request user is a staff user."""
 		return self.has_permission(request, view)
