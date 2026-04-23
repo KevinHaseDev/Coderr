@@ -57,12 +57,16 @@ Installs all required packages listed in requirements.txt.
 ```bash
 python -m pip install -r requirements.txt
 ```
-apply database migrations
-Creates all database tables based on your Django models.
+
+create a .env file
+Stores sensitive settings like SECRET_KEY outside the codebase.
 
 ```bash
 copy .env.example .env
 ```
+
+apply database migrations
+Creates all database tables based on your Django models.
 
 ```bash
 python manage.py migrate
@@ -79,8 +83,6 @@ Runs the server using the Python executable inside .venv without activating it.
 ```bash
 .\.venv\Scripts\python.exe manage.py runserver
 ```
-create a .env file
-Stores sensitive settings like SECRET_KEY outside the codebase.
 
 ## Environment Template
 
