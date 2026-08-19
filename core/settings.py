@@ -18,7 +18,7 @@ if not SECRET_KEY:
     raise ValueError('SECRET_KEY is missing. Set it in the .env file.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = False
 
 ALLOWED_HOSTS = [host for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host]
 
@@ -54,7 +54,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [origin for origin in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if origin]
+CORS_ALLOWED_ORIGINS = [
+    origin for origin in os.getenv(
+        'CORS_ALLOWED_ORIGINS', ''
+        ).split(',') if origin]
 
 ROOT_URLCONF = 'core.urls'
 
@@ -122,6 +125,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = '/var/www/Coderr/static/'
 
 
 REST_FRAMEWORK = {
