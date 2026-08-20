@@ -81,26 +81,32 @@ class OfferListView(generics.ListCreateAPIView):
 
 	def _apply_search(self, queryset):
 		"""Apply a search filter on offer title and description."""
-		search = self.request.query_params.get('search', '').strip()
-		if not search:
+		search = self._get_query_param('search')
+		if search is None:
 			return queryset
 		return queryset.filter(Q(title__icontains=search) | Q(description__icontains=search))
 
 	def _apply_ordering(self, queryset):
 		"""Apply ordering to the queryset based on query parameters."""
-		ordering = self.request.query_params.get('ordering', '-updated_at').strip()
-		allowed = {'updated_at', 'min_price'}
-		field = ordering.lstrip('-')
-		if field not in allowed:
+		ordering = self._get_query_param('ordering') or '-updated_at'
+		allowed = {'updated_at', '-updated_at', 'min_price', '-min_price'}
+		if ordering not in allowed:
 			raise ValidationError(
 				{'ordering': "Allowed values are updated_at or min_price (optionally prefixed with '-')."}
 			)
 		return queryset.order_by(ordering, '-id')
 
+	def _get_query_param(self, name):
+		"""Return a stripped query parameter, or None when it is missing or empty."""
+		raw_value = self.request.query_params.get(name)
+		if raw_value is None:
+			return None
+		return raw_value.strip() or None
+
 	def _get_int_query_param(self, name, min_value):
 		"""Extract and validate an integer query parameter with a minimum value."""
-		raw_value = self.request.query_params.get(name)
-		if raw_value in (None, ''):
+		raw_value = self._get_query_param(name)
+		if raw_value is None:
 			return None
 		try:
 			value = int(raw_value)
@@ -112,8 +118,8 @@ class OfferListView(generics.ListCreateAPIView):
 
 	def _get_decimal_query_param(self, name, min_value):
 		"""Extract and validate a decimal query parameter with a minimum value."""
-		raw_value = self.request.query_params.get(name)
-		if raw_value in (None, ''):
+		raw_value = self._get_query_param(name)
+		if raw_value is None:
 			return None
 		try:
 			value = Decimal(raw_value)
